@@ -248,7 +248,7 @@
     let lastFrame = performance.now();
     let accumulator = 0;
     const FIXED_STEP = 1 / 120;
-    const TARGET = { x: 748, y: 510, radius: 27 };
+    const TARGET = { x: 765, y: 510, radius: 27 };
 
     function makeBody(type, x, y, angle = 0, options = {}) {
       const spec = dimensions[type];
@@ -273,7 +273,7 @@
         makeBody("wall", 1020, 300, 0, { userPlaced: false }),
         makeBody("ramp", 200, 438, .34),
         makeBody("bell", TARGET.x, TARGET.y),
-        ...Array.from({ length: 10 }, (_, index) => makeBody("domino", 422 + index * 31, 506)),
+        ...Array.from({ length: 10 }, (_, index) => makeBody("domino", 380 + index * 35, 506)),
         makeBody("ball", 130, 380)
       ];
       selectedId = null;
@@ -508,16 +508,20 @@
       }
       const delta = { x: b.x - a.x, y: b.y - a.y };
       if (delta.x * normal.x + delta.y * normal.y < 0) normal = { x: -normal.x, y: -normal.y };
-      // Keep the impulse on the overlapping faces; opposite support corners may be far apart on long platforms.
+      // Clip the two support features along the collision normal. Using each box's full projected
+      // width puts a rotated domino's floor contact at its center instead of its bottom corner,
+      // suppressing the torque that should make it fall.
       const tangent = { x: -normal.y, y: normal.x };
-      const tangentA = project(va, tangent), tangentB = project(vb, tangent);
+      const normalA = project(va, normal).max;
+      const normalB = project(vb, normal).min;
+      const featureA = va.filter((point) => normalA - (point.x * normal.x + point.y * normal.y) < .01);
+      const featureB = vb.filter((point) => (point.x * normal.x + point.y * normal.y) - normalB < .01);
+      const tangentA = project(featureA, tangent), tangentB = project(featureB, tangent);
       const tangentStart = Math.max(tangentA.min, tangentB.min);
       const tangentEnd = Math.min(tangentA.max, tangentB.max);
       const tangentPosition = tangentStart <= tangentEnd
         ? (tangentStart + tangentEnd) / 2
         : (Math.min(tangentA.max, tangentB.max) + Math.max(tangentA.min, tangentB.min)) / 2;
-      const normalA = project(va, normal).max;
-      const normalB = project(vb, normal).min;
       const normalPosition = (normalA + normalB) / 2;
       const point = {
         x: normal.x * normalPosition + tangent.x * tangentPosition,
