@@ -4,18 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5efdf">
-  <title>Long Way Around — a Rube Goldberg puzzle game</title>
+  <title>Long Way Around — Rube Goldberg physics lab</title>
   <style>
     :root {
       color-scheme: light;
       --paper: #f5efdf;
-      --paper-deep: #e9dfc9;
       --ink: #202a24;
       --muted: #69736a;
       --green: #27664d;
       --green-dark: #1b4a39;
       --orange: #e66d3b;
-      --line: #d9d0bd;
+      --line: #ded6c4;
       --card: #fffdf7;
       --shadow: 0 14px 34px rgb(41 46 34 / 9%);
       font-family: ui-rounded, "Avenir Next", Avenir, "Segoe UI", sans-serif;
@@ -24,7 +23,6 @@
     }
 
     * { box-sizing: border-box; }
-
     body {
       min-width: 320px;
       min-height: 100vh;
@@ -34,578 +32,827 @@
       background-image: radial-gradient(#bcb29a 0.65px, transparent 0.65px);
       background-size: 17px 17px;
     }
-
-    button { font: inherit; }
-
-    .page { width: min(1440px, 100%); margin: 0 auto; padding: 26px 38px 36px; }
-
-    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    .page { width: min(1500px, 100%); margin: 0 auto; padding: 23px 34px 35px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
     .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
     .brand-mark { display: grid; width: 38px; height: 38px; place-items: center; border: 2px solid var(--ink); border-radius: 50%; background: #f7b755; font-size: 21px; transform: rotate(-12deg); }
-    .brand-name { font-size: 13px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
-    .top-note { color: var(--muted); font-size: 12px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+    .brand-name { font-size: 13px; font-weight: 950; letter-spacing: .12em; text-transform: uppercase; }
+    .top-note { color: var(--muted); font-size: 11px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+    .intro { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 34px 0 18px; }
+    .eyebrow { margin: 0 0 8px; color: var(--green); font-size: 11px; font-weight: 950; letter-spacing: .17em; text-transform: uppercase; }
+    h1 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(34px, 4.5vw, 57px); font-weight: 700; letter-spacing: -.045em; line-height: .98; }
+    .intro-copy { max-width: 390px; margin: 0 0 3px; color: var(--muted); font-size: 14px; line-height: 1.55; }
 
-    .intro { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 43px 0 22px; }
-    .eyebrow { margin: 0 0 9px; color: var(--green); font-size: 12px; font-weight: 900; letter-spacing: .17em; text-transform: uppercase; }
-    h1 { max-width: 760px; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(36px, 5vw, 64px); font-weight: 700; letter-spacing: -.045em; line-height: .99; }
-    .intro-copy { max-width: 300px; margin: 0 0 3px; color: var(--muted); font-size: 15px; line-height: 1.55; }
-
-    .level-nav { display: flex; gap: 8px; margin: 28px 0 18px; }
-    .level-tab { display: inline-flex; align-items: center; gap: 9px; min-height: 39px; padding: 7px 14px; border: 1px solid #cbc3b1; border-radius: 999px; color: #626b62; background: rgb(255 253 247 / 55%); cursor: pointer; font-size: 12px; font-weight: 850; transition: .18s ease; }
-    .level-tab .tab-number { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; background: #e5dece; font-size: 10px; }
-    .level-tab:hover:not(:disabled) { border-color: var(--green); color: var(--green-dark); transform: translateY(-1px); }
-    .level-tab[aria-current="step"] { border-color: var(--green-dark); color: white; background: var(--green-dark); }
-    .level-tab[aria-current="step"] .tab-number { color: var(--green-dark); background: #f5d17b; }
-    .level-tab:disabled { cursor: not-allowed; opacity: .52; }
-
-    .workbench { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(310px, .8fr); align-items: start; gap: 19px; }
-    .panel { overflow: hidden; border: 1px solid #ded6c4; border-radius: 20px; background: var(--card); box-shadow: var(--shadow); }
-    .machine-panel { min-width: 0; }
-    .panel-head { display: flex; align-items: start; justify-content: space-between; gap: 14px; padding: 24px 25px 18px; }
-    .section-kicker { margin: 0 0 6px; color: var(--muted); font-size: 10px; font-weight: 950; letter-spacing: .16em; text-transform: uppercase; }
-    h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 25px; letter-spacing: -.025em; }
-    .objective { margin: 8px 0 0; color: #5a655c; font-size: 13px; }
-    .goal-stamp { flex: 0 0 auto; padding: 9px 12px; border: 1px dashed #cc9e55; border-radius: 12px; color: #8a541f; background: #fff4d9; font-size: 11px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; transform: rotate(2deg); }
-
-    .machine-scroll { overflow-x: auto; padding: 17px 24px 22px; scrollbar-color: #c8bfae transparent; scrollbar-width: thin; }
-    .machine-line { display: flex; align-items: center; min-width: max-content; gap: 5px; }
-    .endpoint { display: flex; flex: 0 0 84px; flex-direction: column; align-items: center; justify-content: center; min-height: 146px; padding: 8px 6px; border: 1px solid #ded6c4; border-radius: 15px; background: #f8f4e9; text-align: center; }
-    .endpoint.goal { background: #eff5e9; border-color: #ccdbc8; }
-    .endpoint-icon { display: grid; width: 45px; height: 45px; place-items: center; margin-bottom: 8px; border-radius: 14px; background: white; box-shadow: 0 4px 10px rgb(41 46 34 / 7%); font-size: 26px; }
-    .endpoint-label { color: var(--muted); font-size: 9px; font-weight: 950; letter-spacing: .13em; text-transform: uppercase; }
-    .endpoint-name { margin: 4px 0 7px; font-family: Georgia, "Times New Roman", serif; font-size: 14px; font-weight: 700; }
-    .signal { display: inline-flex; align-items: center; justify-content: center; min-height: 20px; padding: 3px 7px; border-radius: 999px; background: #e8e5dc; color: #575d55; font-size: 9px; font-weight: 950; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
-    .sig-drop { color: #7048a1; background: #eee5fa; }
-    .sig-roll { color: #236785; background: #def3fb; }
-    .sig-tip { color: #955024; background: #ffecd8; }
-    .sig-lift { color: #72511c; background: #f8eab7; }
-    .sig-spin { color: #9b3d62; background: #f9e2ed; }
-    .sig-ring { color: #27664d; background: #dff0df; }
-    .sig-wind { color: #356d70; background: #dff2ed; }
-    .sig-knock { color: #80511e; background: #f6e8c9; }
-    .sig-heat { color: #a34625; background: #ffe1d0; }
-    .sig-toast { color: #805522; background: #f7ebc8; }
-    .sig-push { color: #6252a4; background: #e8e3fb; }
-    .sig-bounce { color: #8c4b85; background: #f4e1f3; }
-    .sig-pull { color: #386340; background: #e0efd9; }
-    .sig-clink { color: #655823; background: #f4efc9; }
-    .sig-light { color: #966111; background: #fff1bf; }
-    .sig-slide, .sig-breeze { color: #536476; background: #e7edf3; }
-
-    .flow-arrow { position: relative; display: grid; flex: 0 0 19px; height: 26px; place-items: center; color: #aca48f; font-size: 16px; }
-    .flow-arrow::before { position: absolute; top: 12px; left: 0; width: 100%; height: 2px; background: currentColor; content: ""; opacity: .5; }
-    .flow-arrow span { z-index: 1; padding: 0 3px; background: var(--card); }
-    .flow-arrow.active { color: var(--orange); animation: pulse .5s ease-in-out infinite alternate; }
-    .flow-arrow.bad { color: #d64639; }
-    @keyframes pulse { to { transform: translateX(3px); } }
-
-    .slot { position: relative; display: block; flex: 0 0 96px; min-height: 146px; border: 1.5px dashed #c9c0ae; border-radius: 15px; background: #fffdf8; color: var(--ink); text-align: center; transition: .18s ease; }
-    .slot:hover:not(:has(.slot-main:disabled)), .slot.selected-target { border-color: var(--green); background: #f1f8ed; box-shadow: 0 0 0 3px rgb(39 102 77 / 9%); }
-    .slot.filled { border-style: solid; border-color: #b6c9af; background: #f7fbf2; }
-    .slot.running { border-color: #ed9b44; box-shadow: 0 0 0 4px rgb(237 155 68 / 18%); transform: translateY(-4px); }
-    .slot.passed { border-color: #5b9a6c; }
-    .slot.failed { border-color: #d55243; background: #fff1ed; box-shadow: 0 0 0 4px rgb(213 82 67 / 13%); }
-    .slot-main { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 11px 5px 9px; border: 0; border-radius: inherit; color: inherit; background: transparent; cursor: pointer; text-align: center; }
-    .slot-main:focus-visible { outline: 3px solid #4c8f67; outline-offset: 3px; }
-    .slot-main:disabled { cursor: default; }
-    .slot-number { position: absolute; top: 7px; left: 9px; color: #9b9587; font-size: 9px; font-weight: 900; }
-    .slot-icon { display: grid; width: 43px; height: 42px; place-items: center; margin-bottom: 6px; border-radius: 12px; background: white; box-shadow: 0 3px 9px rgb(41 46 34 / 8%); font-size: 24px; }
-    .slot-title { max-width: 84px; overflow: hidden; color: #344239; font-size: 10px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
-    .slot-placeholder { color: #81877f; font-size: 11px; font-weight: 850; }
-    .slot-hint { margin-top: 4px; color: #a19a8a; font-size: 9px; }
-    .slot-signals { display: flex; align-items: center; gap: 4px; margin-top: 7px; }
-    .slot-signals .signal { min-height: 18px; padding: 2px 5px; font-size: 8px; }
-    .slot-remove { position: absolute; top: 5px; right: 7px; display: grid; width: 22px; height: 22px; place-items: center; border: 0; border-radius: 50%; color: #8d6257; background: transparent; cursor: pointer; font-size: 16px; line-height: 1; }
-    .slot-remove:hover { color: white; background: #d55243; }
-    .run-orb { display: none; position: absolute; z-index: 2; top: 3px; left: 5px; width: 13px; height: 13px; border: 2px solid #fff; border-radius: 50%; background: var(--orange); box-shadow: 0 1px 4px #6b371e; }
-    .slot.running .run-orb { display: block; animation: orbit .65s ease-in-out infinite alternate; }
-    @keyframes orbit { to { transform: translate(92px, 7px); } }
-
-    .board-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 24px 18px; border-top: 1px solid #eee8db; background: #fbf8ef; }
-    .run-report { display: flex; align-items: center; gap: 11px; min-width: 0; }
-    .report-icon { display: grid; flex: 0 0 36px; width: 36px; height: 36px; place-items: center; border: 1px solid #d7d2c2; border-radius: 11px; background: white; font-size: 18px; }
-    .report-copy { min-width: 0; }
-    .report-title { margin: 0 0 2px; font-size: 11px; font-weight: 950; }
-    .report-text { margin: 0; overflow: hidden; color: #69736a; font-size: 11px; line-height: 1.4; text-overflow: ellipsis; }
-    .report-copy.success .report-title { color: var(--green); }
-    .report-copy.error .report-title { color: #bb4436; }
-    .board-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
-    .button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 9px 15px; border: 1px solid transparent; border-radius: 11px; cursor: pointer; font-size: 11px; font-weight: 950; transition: .15s ease; }
-    .button:disabled { cursor: wait; opacity: .56; }
-    .button-primary { color: white; background: var(--green); box-shadow: 0 4px 0 var(--green-dark); }
-    .button-primary:hover:not(:disabled) { background: #337c5e; transform: translateY(-1px); box-shadow: 0 5px 0 var(--green-dark); }
+    .controls { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 19px 0 13px; padding: 11px 13px; border: 1px solid #ded6c4; border-radius: 15px; background: rgb(255 253 247 / 90%); box-shadow: 0 5px 18px rgb(41 46 34 / 5%); }
+    .transport { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 39px; padding: 8px 13px; border: 1px solid transparent; border-radius: 10px; cursor: pointer; font-size: 11px; font-weight: 950; transition: .16s ease; }
+    .button:focus-visible, .tool:focus-visible { outline: 3px solid #e6a647; outline-offset: 3px; }
+    .button-primary { color: white; background: var(--green); box-shadow: 0 3px 0 var(--green-dark); }
+    .button-primary:hover { background: #337c5e; transform: translateY(-1px); }
     .button-secondary { border-color: #ded6c4; color: #5d675f; background: white; }
-    .button-secondary:hover:not(:disabled) { border-color: #abb7a7; color: var(--green-dark); }
-    .button-next { color: #634615; background: #f5ce6b; box-shadow: 0 4px 0 #c79235; }
-    .button-next:hover:not(:disabled) { background: #f8d983; transform: translateY(-1px); }
-    .button[hidden] { display: none; }
+    .button-secondary:hover { border-color: #aebaa8; color: var(--green-dark); }
+    .gravity-control { display: flex; align-items: center; gap: 9px; min-width: 220px; color: #657066; font-size: 10px; font-weight: 900; }
+    .gravity-control input { width: 110px; accent-color: var(--green); cursor: pointer; }
+    .gravity-value { min-width: 53px; color: var(--green-dark); font-variant-numeric: tabular-nums; }
 
-    .tray-panel .panel-head { padding-bottom: 13px; }
-    .tray-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
-    .tray-count { padding: 5px 8px; border-radius: 999px; color: #617064; background: #eef2e8; font-size: 10px; font-weight: 900; }
-    .tray-instructions { margin: 0; padding: 0 24px 15px; color: #798078; font-size: 11px; line-height: 1.45; }
-    .parts-list { display: grid; gap: 9px; padding: 0 15px 17px; }
-    .part-card { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; padding: 10px; border: 1px solid #e4ddce; border-radius: 13px; color: var(--ink); background: #fffefa; cursor: grab; text-align: left; transition: .16s ease; }
-    .part-card:hover:not(:disabled) { border-color: #9db89c; background: #f8fcf4; box-shadow: 0 4px 12px rgb(41 46 34 / 6%); transform: translateY(-1px); }
-    .part-card:active { cursor: grabbing; }
-    .part-card.selected { border-color: var(--green); background: #edf6e9; box-shadow: 0 0 0 3px rgb(39 102 77 / 12%); }
-    .part-card.used { opacity: .48; cursor: default; }
-    .part-card:disabled { cursor: default; }
-    .part-icon { display: grid; width: 43px; height: 43px; place-items: center; border-radius: 11px; background: #f3efdf; font-size: 24px; }
-    .part-info { min-width: 0; }
-    .part-name { display: block; overflow: hidden; font-family: Georgia, "Times New Roman", serif; font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-    .part-description { display: block; margin-top: 3px; overflow: hidden; color: #788076; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-    .part-connectors { display: flex; align-items: center; justify-content: flex-end; gap: 3px; margin-top: 6px; }
-    .part-connectors .signal { min-height: 16px; padding: 2px 5px; font-size: 7px; }
-    .part-arrow { color: #aaa28f; font-size: 10px; }
-    .part-state { color: #8b9187; font-size: 9px; font-weight: 900; text-align: right; }
-    .part-state.in-machine { color: var(--green); }
-    .legend { display: flex; align-items: center; gap: 7px; padding: 11px 18px; border-top: 1px solid #eee8db; color: #777e75; background: #fbf8ef; font-size: 10px; line-height: 1.4; }
-    .legend-mark { color: var(--green); font-size: 15px; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 292px; align-items: start; gap: 16px; }
+    .panel { overflow: hidden; border: 1px solid #ded6c4; border-radius: 18px; background: var(--card); box-shadow: var(--shadow); }
+    .scene-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 18px 12px; }
+    .scene-title { display: flex; align-items: center; gap: 9px; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 19px; }
+    .live-dot { width: 9px; height: 9px; border-radius: 50%; background: #bbab88; box-shadow: 0 0 0 4px #eee8d8; }
+    .live-dot.running { background: #46a36c; box-shadow: 0 0 0 4px #d9eedc; animation: breathe 1s ease-in-out infinite alternate; }
+    @keyframes breathe { to { box-shadow: 0 0 0 7px #e5f3e4; } }
+    .scene-hint { color: #7b8278; font-size: 10px; text-align: right; }
+    .canvas-wrap { position: relative; overflow: hidden; border-top: 1px solid #eee8db; border-bottom: 1px solid #eee8db; background: #faf7ec; touch-action: none; }
+    #scene { display: block; width: 100%; height: auto; aspect-ratio: 5 / 3; cursor: grab; touch-action: none; }
+    #scene.dragging { cursor: grabbing; }
+    #scene.placing { cursor: crosshair; }
+    .scene-status { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 17px; color: #58655a; background: #fbf8ef; font-size: 11px; }
+    .status-icon { display: grid; flex: 0 0 27px; width: 27px; height: 27px; place-items: center; border: 1px solid #ddd5c4; border-radius: 8px; background: white; font-size: 14px; }
+    #status-text { line-height: 1.4; }
+    #status-text strong { color: #35463b; }
 
-    .howto { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 17px 0 0; color: #69736a; font-size: 11px; text-align: center; }
-    .howto strong { color: #3e4d41; }
-    .howto-separator { color: #b8ae98; }
-    .win-banner { display: none; align-items: center; justify-content: center; gap: 10px; margin-top: 16px; padding: 12px 16px; border: 1px solid #c1d7b6; border-radius: 13px; color: #285e3d; background: #eff7e8; font-family: Georgia, "Times New Roman", serif; font-size: 15px; text-align: center; }
-    .win-banner.visible { display: flex; animation: pop .35s ease-out; }
-    @keyframes pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
-    .footer-note { margin: 28px 0 0; color: #85877c; font-size: 10px; text-align: center; }
+    .tool-panel-head { padding: 17px 18px 8px; }
+    .section-kicker { margin: 0 0 5px; color: var(--muted); font-size: 9px; font-weight: 950; letter-spacing: .16em; text-transform: uppercase; }
+    h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 22px; letter-spacing: -.02em; }
+    .tool-intro { margin: 8px 0 0; color: #788078; font-size: 10px; line-height: 1.45; }
+    .tool-list { display: grid; gap: 7px; padding: 8px 11px 13px; }
+    .tool { display: grid; grid-template-columns: 38px minmax(0, 1fr) 15px; align-items: center; gap: 9px; width: 100%; min-height: 55px; padding: 7px 9px; border: 1px solid #e4ddce; border-radius: 12px; background: #fffefa; cursor: grab; text-align: left; transition: .16s ease; user-select: none; }
+    .tool:hover, .tool.chosen { border-color: #9db89c; background: #f4f9ef; box-shadow: 0 3px 10px rgb(41 46 34 / 6%); transform: translateY(-1px); }
+    .tool:active { cursor: grabbing; }
+    .tool-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 10px; background: #f3efdf; font-size: 21px; }
+    .tool-name { display: block; font-family: Georgia, "Times New Roman", serif; font-size: 12px; font-weight: 800; }
+    .tool-description { display: block; margin-top: 2px; color: #7b8379; font-size: 9px; line-height: 1.25; }
+    .drag-mark { color: #9c9a8e; font-size: 15px; }
+    .tool-note { display: flex; align-items: start; gap: 8px; padding: 11px 15px; border-top: 1px solid #eee8db; color: #717a70; background: #fbf8ef; font-size: 9px; line-height: 1.45; }
+    .note-icon { color: var(--green); font-size: 14px; }
+    .tips { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 7px 17px; margin: 13px 0 0; color: #70786e; font-size: 10px; }
+    .tips strong { color: #3c5143; }
+    kbd { padding: 2px 5px; border: 1px solid #d4cbb8; border-bottom-width: 2px; border-radius: 5px; color: #4e5e52; background: #fffdf7; font-family: inherit; font-size: 9px; font-weight: 900; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
 
-    @media (max-width: 1200px) {
-      .page { padding: 22px 22px 30px; }
-      .workbench { grid-template-columns: minmax(0, 1fr); }
-      .tray-panel { display: grid; grid-template-columns: 1fr; }
-      .parts-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 1050px) {
+      .page { padding-right: 22px; padding-left: 22px; }
+      .workspace { grid-template-columns: minmax(0, 1fr) 250px; gap: 12px; }
+      .scene-hint { max-width: 250px; line-height: 1.4; }
+      .tool-panel-head { padding-right: 13px; padding-left: 13px; }
+      .tool-list { padding-right: 8px; padding-left: 8px; }
     }
-
-    @media (max-width: 620px) {
-      .page { padding: 17px 13px 25px; }
-      .top-note { display: none; }
-      .intro { align-items: start; flex-direction: column; gap: 11px; margin: 34px 0 18px; }
-      h1 { font-size: clamp(38px, 11vw, 55px); }
-      .intro-copy { max-width: 420px; font-size: 13px; }
-      .level-nav { overflow-x: auto; margin: 19px -3px 13px; padding: 3px; }
-      .level-tab { flex: 0 0 auto; padding: 7px 11px; }
-      .panel { border-radius: 16px; }
-      .panel-head { padding: 19px 17px 14px; }
-      .goal-stamp { max-width: 102px; font-size: 9px; text-align: center; }
-      .machine-scroll { padding: 14px 14px 18px; }
-      .board-footer { align-items: stretch; flex-direction: column; padding: 13px 15px 15px; }
-      .board-actions { display: grid; grid-template-columns: 1fr 1fr; }
-      .button { min-height: 42px; padding: 8px 10px; }
-      .button-next { grid-column: 1 / -1; }
-      .parts-list { grid-template-columns: 1fr; gap: 7px; padding: 0 11px 14px; }
-      .part-card { padding: 8px; }
-      .tray-panel .panel-head { padding: 17px 16px 11px; }
-      .tray-instructions { padding: 0 16px 12px; }
-      .howto { align-items: start; flex-wrap: wrap; gap: 5px 7px; font-size: 10px; }
+    @media (max-width: 780px) {
+      .page { padding: 16px 12px 25px; }
+      .top-note { font-size: 9px; }
+      .intro { align-items: start; flex-direction: column; gap: 9px; margin: 28px 0 13px; }
+      h1 { font-size: clamp(35px, 9vw, 49px); }
+      .intro-copy { max-width: 540px; font-size: 12px; }
+      .controls { align-items: start; flex-direction: column; gap: 10px; padding: 10px; }
+      .transport { width: 100%; }
+      .button { flex: 1; min-height: 38px; padding: 7px 8px; font-size: 10px; }
+      .gravity-control { width: 100%; justify-content: space-between; }
+      .gravity-control input { flex: 1; max-width: 220px; }
+      .workspace { grid-template-columns: minmax(0, 1fr); }
+      .tool-panel { display: grid; grid-template-columns: minmax(0, 1fr); }
+      .tool-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .scene-hint { max-width: 190px; font-size: 9px; }
+      .tips { justify-content: flex-start; gap: 7px 11px; font-size: 9px; }
     }
-
+    @media (max-width: 480px) {
+      .brand-mark { width: 33px; height: 33px; font-size: 18px; }
+      .brand-name { font-size: 11px; }
+      .top-note { max-width: 100px; text-align: right; }
+      .scene-heading { align-items: start; flex-direction: column; gap: 5px; padding: 12px 13px 10px; }
+      .scene-hint { max-width: none; text-align: left; }
+      .scene-title { font-size: 17px; }
+      .tool-list { gap: 6px; padding-right: 7px; padding-left: 7px; }
+      .tool { grid-template-columns: 31px minmax(0, 1fr); gap: 7px; min-height: 54px; padding: 6px; }
+      .tool-icon { width: 31px; height: 34px; font-size: 18px; }
+      .tool-name { font-size: 11px; }
+      .tool-description { font-size: 8px; }
+      .drag-mark { display: none; }
+      .transport { display: grid; grid-template-columns: 1fr 1fr; }
+      .transport .button-primary { grid-column: 1 / -1; }
+    }
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
     }
   </style>
 </head>
 <body>
-  <main class="page" id="game">
+  <main class="page">
     <header class="topbar">
-      <a class="brand" href="#" aria-label="Long Way Around home">
+      <a class="brand" href="#" aria-label="Long Way Around physics lab">
         <span class="brand-mark" aria-hidden="true">⚙</span>
         <span class="brand-name">Long Way Around</span>
       </a>
-      <div class="top-note">A tiny machine-building puzzle</div>
+      <div class="top-note">A little physics lab</div>
     </header>
 
     <section class="intro" aria-labelledby="page-title">
       <div>
-        <p class="eyebrow">A Rube Goldberg puzzle game</p>
-        <h1 id="page-title">The long way<br>is the fun way.</h1>
+        <p class="eyebrow">Rube Goldberg physics lab</p>
+        <h1 id="page-title">Build it. Let it roll.</h1>
       </div>
-      <p class="intro-copy">Build a beautifully unnecessary chain of cause and effect. Fit the right parts together, then let the little machine do its thing.</p>
+      <p class="intro-copy">A ball, a ramp, and absolutely no reason to make this so complicated. Move pieces around, add your own, then see what gravity and collisions do.</p>
     </section>
 
-    <nav class="level-nav" id="level-nav" aria-label="Puzzles"></nav>
+    <section class="controls" aria-label="Simulation controls">
+      <div class="transport">
+        <button class="button button-primary" id="run-button" type="button">▶ Run physics</button>
+        <button class="button button-secondary" id="reset-run" type="button" title="Return to the last built arrangement">↺ Reset run</button>
+        <button class="button button-secondary" id="reset-layout" type="button" title="Restore the original starter machine">⟲ Starter layout</button>
+      </div>
+      <label class="gravity-control" for="gravity-slider"><span>GRAVITY</span><input id="gravity-slider" type="range" min="0" max="19.6" step="0.1" value="9.8"><output class="gravity-value" id="gravity-value" for="gravity-slider">9.8 m/s²</output></label>
+    </section>
 
-    <div class="workbench">
-      <section class="panel machine-panel" aria-labelledby="puzzle-title">
-        <div class="panel-head">
-          <div>
-            <p class="section-kicker" id="level-kicker">Puzzle 01 · Workshop</p>
-            <h2 id="puzzle-title">The Bell Situation</h2>
-            <p class="objective" id="objective"></p>
-          </div>
-          <div class="goal-stamp" id="goal-stamp">Make it ring</div>
+    <div class="workspace">
+      <section class="panel sim-stage" aria-labelledby="scene-title">
+        <div class="scene-heading">
+          <h2 class="scene-title" id="scene-title"><span class="live-dot" id="live-dot" aria-hidden="true"></span>Workshop floor</h2>
+          <div class="scene-hint">Drag parts into the scene. While paused, drag objects to rearrange them.</div>
         </div>
-
-        <div class="machine-scroll" aria-label="Machine sequence. Scroll horizontally on small screens.">
-          <div class="machine-line" id="machine-line"></div>
+        <div class="canvas-wrap" id="canvas-wrap">
+          <canvas id="scene" width="1000" height="600" aria-label="Interactive physics scene with a marble, ramp, dominoes, and bell. Drag parts here to build a machine."></canvas>
         </div>
-
-        <div class="board-footer">
-          <div class="run-report" aria-live="polite" aria-atomic="true">
-            <div class="report-icon" id="report-icon" aria-hidden="true">🧰</div>
-            <div class="report-copy" id="report-copy">
-              <p class="report-title" id="report-title">Ready when you are</p>
-              <p class="report-text" id="report-text"></p>
-            </div>
-          </div>
-          <div class="board-actions">
-            <button class="button button-secondary" id="clear-button" type="button">↺ Clear</button>
-            <button class="button button-primary" id="run-button" type="button">▶ Run machine</button>
-            <button class="button button-next" id="next-button" type="button" hidden>Next puzzle&nbsp; →</button>
-          </div>
+        <div class="scene-status" aria-live="polite" aria-atomic="true">
+          <span class="status-icon" id="status-icon" aria-hidden="true">🧰</span>
+          <span id="status-text"><strong>Ready to tinker.</strong> Drag the marble or dominoes, or add something from the parts tray.</span>
         </div>
       </section>
 
-      <aside class="panel tray-panel" aria-labelledby="tray-title">
-        <div class="panel-head">
-          <div class="tray-title-row">
-            <div>
-              <p class="section-kicker">Useful-ish objects</p>
-              <h2 id="tray-title">Parts tray</h2>
-            </div>
-            <span class="tray-count" id="tray-count"></span>
-          </div>
+      <aside class="panel tool-panel" aria-labelledby="tools-heading">
+        <div class="tool-panel-head">
+          <p class="section-kicker">Drag into the workshop</p>
+          <h2 id="tools-heading">Parts tray</h2>
+          <p class="tool-intro">Add a part, move it by hand, or rotate it before the run. There are no slots and no required order.</p>
         </div>
-        <p class="tray-instructions">Each part passes one kind of nudge to the next. Follow the little signal tags to find a chain that works.</p>
-        <div class="parts-list" id="parts-list"></div>
-        <div class="legend"><span class="legend-mark" aria-hidden="true">↗</span><span>Part tags show the nudge it needs and the nudge it makes.</span></div>
+        <div class="tool-list" id="tool-list"></div>
+        <div class="tool-note"><span class="note-icon" aria-hidden="true">↗</span><span>Touchscreen? Tap a part, then tap the scene to place it. Drag any placed object to move it.</span></div>
       </aside>
     </div>
 
-    <div class="howto" aria-label="How to play">
-      <span><strong>1.</strong> Pick a part</span><span class="howto-separator">→</span>
-      <span><strong>2.</strong> Put it in a station</span><span class="howto-separator">→</span>
-      <span><strong>3.</strong> Run the machine</span>
+    <div class="tips" aria-label="Keyboard controls">
+      <span><kbd>Space</kbd> run / pause</span>
+      <span><kbd>R</kbd> rotate selected part</span>
+      <span><kbd>Delete</kbd> remove selected part</span>
+      <span><kbd>Esc</kbd> deselect</span>
+      <span>Reset run returns to your last build.</span>
     </div>
-    <div class="win-banner" id="win-banner" role="status"></div>
-    <p class="footer-note">No actual toast was harmed in the making of these puzzles.</p>
+    <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
   </main>
 
   <script>
-    const levels = [
-      {
-        name: "The Bell Situation",
-        chapter: "Workshop",
-        objective: "Get the marble to ring the bell. It could just be carried over, but where's the fun in that?",
-        goalLabel: "Make it ring",
-        stations: 4,
-        start: "drop",
-        goal: "ring",
-        parts: [
-          { id: "chute", name: "Marble chute", icon: "🛝", description: "A brisk start downhill.", input: "drop", output: "roll", action: "The marble rolls down the chute." },
-          { id: "dominoes", name: "Domino parade", icon: "🁣", description: "One little nudge, many big feelings.", input: "roll", output: "tip", action: "The marble tips the first domino. The rest follow." },
-          { id: "lever", name: "Teeter lever", icon: "⚖️", description: "Turns a tip into a lift.", input: "tip", output: "lift", action: "The dominoes tip the lever, lifting its other end." },
-          { id: "bell", name: "Rope bell", icon: "🔔", description: "Finally, a reason for all this.", input: "lift", output: "ring", action: "The lever lifts the string. Ding!" },
-          { id: "ramp", name: "Side ramp", icon: "📐", description: "A tempting detour.", input: "roll", output: "slide", action: "The marble slides away on the side ramp." },
-          { id: "fan", name: "Desk fan", icon: "🪭", description: "Excellent for loose papers.", input: "lift", output: "spin", action: "The fan spins, but the bell string stays put." },
-          { id: "spring", name: "Spring cup", icon: "🌀", description: "Boing is not quite ding.", input: "drop", output: "bounce", action: "The marble bounces in the spring cup." }
-        ]
-      },
-      {
-        name: "Breakfast, Eventually",
-        chapter: "Kitchen",
-        objective: "Get the toaster to pop. Five stations for one piece of toast feels about right.",
-        goalLabel: "Pop the toast",
-        stations: 5,
-        start: "wind",
-        goal: "toast",
-        parts: [
-          { id: "crank", name: "Hand crank", icon: "🔧", description: "A little elbow grease.", input: "wind", output: "spin", action: "The hand crank spins with one last turn." },
-          { id: "gears", name: "Gear train", icon: "⚙️", description: "Turns spin into a roll.", input: "spin", output: "roll", action: "The gears turn and send a marble rolling." },
-          { id: "cup", name: "Marble basket", icon: "🧺", description: "A rolling marble makes a knock.", input: "roll", output: "knock", action: "The marble drops into a basket and knocks the switch." },
-          { id: "switch", name: "Big red switch", icon: "🔴", description: "On means toast. Probably.", input: "knock", output: "heat", action: "The basket bumps the switch. Toaster on!" },
-          { id: "toaster", name: "Old toaster", icon: "🍞", description: "The grand finale.", input: "heat", output: "toast", action: "Pop! Breakfast has taken the scenic route." },
-          { id: "windbell", name: "Wind chime", icon: "🎐", description: "A pleasant but unhelpful spin.", input: "spin", output: "ring", action: "The gears ring the wind chime. Lovely." },
-          { id: "kdomino", name: "Tiny dominoes", icon: "🁣", description: "A knock becomes a tip.", input: "roll", output: "tip", action: "The marble topples the tiny dominoes." },
-          { id: "kfan", name: "Cooling fan", icon: "🪭", description: "Makes a breeze, not heat.", input: "heat", output: "breeze", action: "The fan catches a warm draft and blows it away." },
-          { id: "kspring", name: "Springy plate", icon: "🌀", description: "A windy bounce.", input: "wind", output: "bounce", action: "The plate bounces, knocking nothing in particular." }
-        ]
-      },
-      {
-        name: "Let There Be Light",
-        chapter: "Attic",
-        objective: "Turn on the tiny lamp with an unnecessarily grand chain of events.",
-        goalLabel: "Light the lamp",
-        stations: 6,
-        start: "push",
-        goal: "light",
-        parts: [
-          { id: "springboard", name: "Springboard", icon: "🌀", description: "The big opening bounce.", input: "push", output: "bounce", action: "The push sends the ball bouncing off the springboard." },
-          { id: "track", name: "Marble track", icon: "🛝", description: "Bounce becomes roll.", input: "bounce", output: "roll", action: "The bouncing ball lands in the track and rolls on." },
-          { id: "adominoes", name: "Domino parade", icon: "🁣", description: "Roll becomes tip.", input: "roll", output: "tip", action: "The ball tips a domino. A whole row tips after it." },
-          { id: "pulley", name: "Rope & pulley", icon: "🪢", description: "A tip pulls the rope.", input: "tip", output: "pull", action: "The last domino pulls the pulley cord." },
-          { id: "magnet", name: "Lucky magnet", icon: "🧲", description: "Pull becomes clink.", input: "pull", output: "clink", action: "The cord tugs a magnet; a metal washer goes clink." },
-          { id: "lamp", name: "Tiny lamp", icon: "💡", description: "A shiny way to finish.", input: "clink", output: "light", action: "The washer taps the lamp switch. Let there be light!" },
-          { id: "atticfan", name: "Attic fan", icon: "🪭", description: "A push makes a breeze.", input: "push", output: "breeze", action: "The fan makes a breeze, rustling the plans." },
-          { id: "atticbell", name: "Old dinner bell", icon: "🔔", description: "A pull makes a ring.", input: "pull", output: "ring", action: "The cord rings the dinner bell. Nobody is home." },
-          { id: "atticlever", name: "Loose lever", icon: "⚖️", description: "A tip becomes a lift.", input: "tip", output: "lift", action: "The dominoes tip the loose lever." },
-          { id: "atticcrank", name: "Dusty crank", icon: "🔧", description: "A roll turns the crank.", input: "roll", output: "spin", action: "The ball turns the dusty crank." }
-        ]
-      }
+    const WORLD_WIDTH = 1000;
+    const WORLD_HEIGHT = 600;
+    const canvas = document.querySelector("#scene");
+    const ctx = canvas.getContext("2d");
+    const gravitySlider = document.querySelector("#gravity-slider");
+    const gravityValue = document.querySelector("#gravity-value");
+    const runButton = document.querySelector("#run-button");
+    const statusText = document.querySelector("#status-text");
+    const statusIcon = document.querySelector("#status-icon");
+    const announcer = document.querySelector("#announcer");
+    const liveDot = document.querySelector("#live-dot");
+
+    const tools = [
+      { type: "ball", name: "Marble", icon: "🔵", description: "A rolling ball. Gravity-ready." },
+      { type: "domino", name: "Domino", icon: "🁣", description: "Topples and knocks into things." },
+      { type: "crate", name: "Wooden block", icon: "📦", description: "A sturdy, movable box." },
+      { type: "ramp", name: "Ramp", icon: "🛝", description: "A fixed sloping surface." },
+      { type: "spring", name: "Springboard", icon: "🌀", description: "A bouncy platform." },
+      { type: "bumper", name: "Bumper", icon: "🟠", description: "A round, fixed obstacle." }
     ];
 
-    const signalNames = {
-      drop: "Drop", roll: "Roll", tip: "Tip", lift: "Lift", spin: "Spin", ring: "Ring",
-      wind: "Wind", knock: "Knock", heat: "Heat", toast: "Toast", push: "Push",
-      bounce: "Bounce", pull: "Pull", clink: "Clink", light: "Light", slide: "Slide", breeze: "Breeze"
+    const dimensions = {
+      ball: { shape: "circle", radius: 14, mass: 1.1, restitution: .38, friction: .23, dynamic: true },
+      domino: { shape: "box", width: 15, height: 58, mass: .55, restitution: .08, friction: .82, dynamic: true },
+      crate: { shape: "box", width: 46, height: 42, mass: 2.1, restitution: .08, friction: .68, dynamic: true },
+      ramp: { shape: "box", width: 190, height: 13, mass: 0, restitution: .12, friction: .78, dynamic: false },
+      spring: { shape: "box", width: 128, height: 15, mass: 0, restitution: 1.04, friction: .27, dynamic: false },
+      bumper: { shape: "circle", radius: 23, mass: 0, restitution: .88, friction: .25, dynamic: false },
+      ground: { shape: "box", width: 1200, height: 70, mass: 0, restitution: .12, friction: .82, dynamic: false },
+      wall: { shape: "box", width: 34, height: 700, mass: 0, restitution: .15, friction: .75, dynamic: false },
+      bell: { shape: "box", width: 30, height: 34, mass: 0, restitution: .12, friction: .6, dynamic: false }
     };
 
-    const state = { level: 0, unlocked: 0, placed: [], selected: null, running: false, activeSlot: -1, passed: [], failedSlot: -1, complete: false, report: null };
-    const $ = (selector) => document.querySelector(selector);
-    const game = $("#game");
+    let world = [];
+    let selectedId = null;
+    let selectedTool = null;
+    let running = false;
+    let won = false;
+    let runSnapshot = null;
+    let dragBody = null;
+    let dragOffset = { x: 0, y: 0 };
+    let gravity = 980;
+    let nextId = 1;
+    let lastFrame = performance.now();
+    let accumulator = 0;
+    const FIXED_STEP = 1 / 120;
+    const TARGET = { x: 748, y: 510, radius: 27 };
 
-    function signalTag(signal) {
-      const label = signalNames[signal] || signal;
-      return `<span class="signal sig-${signal}">${label}</span>`;
+    function makeBody(type, x, y, angle = 0, options = {}) {
+      const spec = dimensions[type];
+      const body = {
+        id: nextId++, type, x, y, angle, vx: 0, vy: 0, angularVelocity: 0,
+        shape: spec.shape, radius: spec.radius || 0, width: spec.width || 0, height: spec.height || 0,
+        mass: spec.mass, inverseMass: spec.dynamic ? 1 / spec.mass : 0,
+        inertia: spec.shape === "circle" ? spec.mass * (spec.radius || 1) ** 2 / 2 : spec.mass * ((spec.width || 1) ** 2 + (spec.height || 1) ** 2) / 12,
+        inverseInertia: spec.dynamic ? 1 / Math.max(.01, (spec.shape === "circle" ? spec.mass * (spec.radius || 1) ** 2 / 2 : spec.mass * ((spec.width || 1) ** 2 + (spec.height || 1) ** 2) / 12)) : 0,
+        dynamic: spec.dynamic, restitution: spec.restitution, friction: spec.friction,
+        userPlaced: options.userPlaced ?? true, color: options.color || "",
+        sensor: type === "bell"
+      };
+      return body;
     }
 
-    function currentLevel() { return levels[state.level]; }
-
-    function setReport(title, text, icon = "🧰", tone = "") {
-      state.report = { title, text, icon, tone };
-      renderReport();
+    function buildStarter() {
+      nextId = 1;
+      world = [
+        makeBody("ground", 500, 570, 0, { userPlaced: false }),
+        makeBody("wall", -20, 300, 0, { userPlaced: false }),
+        makeBody("wall", 1020, 300, 0, { userPlaced: false }),
+        makeBody("ramp", 200, 438, .34),
+        makeBody("bell", TARGET.x, TARGET.y),
+        ...Array.from({ length: 10 }, (_, index) => makeBody("domino", 422 + index * 31, 510)),
+        makeBody("ball", 104, 369)
+      ];
+      selectedId = null;
+      selectedTool = null;
+      running = false;
+      won = false;
+      runSnapshot = null;
+      setStatus("🧰", "<strong>Ready to tinker.</strong> Drag the marble or dominoes, or add something from the parts tray.");
+      renderTools();
+      updateControls();
+      draw();
     }
 
-    function renderReport() {
-      const report = state.report || { title: "Ready when you are", text: "Choose a part and place it in a station.", icon: "🧰", tone: "" };
-      $("#report-title").textContent = report.title;
-      $("#report-text").textContent = report.text;
-      $("#report-icon").textContent = report.icon;
-      $("#report-copy").className = `report-copy ${report.tone}`;
-    }
-
-    function renderNav() {
-      $("#level-nav").innerHTML = levels.map((level, index) => {
-        const locked = index > state.unlocked;
-        const current = index === state.level;
-        const label = locked ? "Locked puzzle" : `Puzzle ${index + 1}: ${level.name}`;
-        return `<button class="level-tab" type="button" data-level="${index}" aria-label="${label}" ${current ? 'aria-current="step"' : ""} ${locked || state.running ? "disabled" : ""}><span class="tab-number">${locked ? "·" : index < state.unlocked ? "✓" : String(index + 1).padStart(2, "0")}</span><span>${locked ? "Locked" : level.chapter}</span></button>`;
-      }).join("");
-      $("#level-nav").querySelectorAll("[data-level]").forEach((button) => {
-        button.addEventListener("click", () => loadLevel(Number(button.dataset.level)));
-      });
-    }
-
-    function renderMachine() {
-      const level = currentLevel();
-      const source = `<div class="endpoint"><span class="endpoint-icon" aria-hidden="true">${state.level === 0 ? "🔵" : state.level === 1 ? "🌬️" : "👆"}</span><span class="endpoint-label">It starts</span><span class="endpoint-name">${state.level === 0 ? "A marble" : state.level === 1 ? "A crank" : "A push"}</span>${signalTag(level.start)}</div>`;
-      const goal = `<div class="endpoint goal"><span class="endpoint-icon" aria-hidden="true">${state.level === 0 ? "🔔" : state.level === 1 ? "🍞" : "💡"}</span><span class="endpoint-label">The goal</span><span class="endpoint-name">${state.level === 0 ? "A bell" : state.level === 1 ? "Toast" : "A lamp"}</span>${signalTag(level.goal)}</div>`;
-      const slots = state.placed.map((partId, index) => {
-        const part = level.parts.find((item) => item.id === partId);
-        const classes = ["slot"];
-        if (part) classes.push("filled");
-        if (state.activeSlot === index) classes.push("running");
-        if (state.passed.includes(index)) classes.push("passed");
-        if (state.failedSlot === index) classes.push("failed");
-        if (state.selected && !part) classes.push("selected-target");
-        const contents = part
-          ? `<span class="slot-number">${String(index + 1).padStart(2, "0")}</span><span class="run-orb" aria-hidden="true"></span><span class="slot-icon" aria-hidden="true">${part.icon}</span><span class="slot-title">${part.name}</span><span class="slot-signals">${signalTag(part.input)}<span aria-hidden="true">→</span>${signalTag(part.output)}</span><span class="sr-only">${signalNames[part.input]} to ${signalNames[part.output]}</span>`
-          : `<span class="slot-number">${String(index + 1).padStart(2, "0")}</span><span class="slot-icon" aria-hidden="true">＋</span><span class="slot-placeholder">${state.selected ? "Place part" : "Open station"}</span><span class="slot-hint">${state.selected ? "Click to fit" : "Choose from tray"}</span>`;
-        const label = part ? `Station ${index + 1}, ${part.name}. Click to remove.` : `Open station ${index + 1}. Click to place selected part.`;
-        const remove = part ? `<button class="slot-remove" data-remove="${index}" type="button" aria-label="Remove ${part.name} from station ${index + 1}" ${state.running ? "disabled" : ""}>×</button>` : "";
-        return `<div class="${classes.join(" ")}"><button class="slot-main" type="button" data-slot="${index}" aria-label="${label}" ${state.running ? "disabled" : ""}>${contents}</button>${remove}</div>`;
-      });
-      const line = [source];
-      slots.forEach((slot, index) => {
-        line.push(`<div class="flow-arrow ${state.activeSlot === index ? "active" : ""} ${state.failedSlot === index ? "bad" : ""}" aria-hidden="true"><span>›</span></div>`, slot);
-      });
-      line.push(`<div class="flow-arrow ${state.activeSlot === state.placed.length ? "active" : ""} ${state.failedSlot === state.placed.length ? "bad" : ""}" aria-hidden="true"><span>›</span></div>`, goal);
-      $("#machine-line").innerHTML = line.join("");
-
-      $("#machine-line").querySelectorAll("[data-slot]").forEach((button) => {
+    function renderTools() {
+      const list = document.querySelector("#tool-list");
+      list.innerHTML = tools.map((tool) => `<button class="tool ${selectedTool === tool.type ? "chosen" : ""}" type="button" draggable="${!running}" data-tool="${tool.type}" aria-pressed="${selectedTool === tool.type}" aria-label="Add ${tool.name}: ${tool.description}"><span class="tool-icon" aria-hidden="true">${tool.icon}</span><span><span class="tool-name">${tool.name}</span><span class="tool-description">${tool.description}</span></span><span class="drag-mark" aria-hidden="true">⠿</span></button>`).join("");
+      list.querySelectorAll("[data-tool]").forEach((button) => {
         button.addEventListener("click", () => {
-          if (state.running) return;
-          const slotIndex = Number(button.dataset.slot);
-          if (state.selected) placePart(state.selected, slotIndex);
-          else if (state.placed[slotIndex]) removePart(slotIndex);
-          else setReport("Pick a part first", "Choose one from the tray, then choose an open station.", "👆");
+          if (running) return;
+          selectedTool = selectedTool === button.dataset.tool ? null : button.dataset.tool;
+          if (selectedTool) setStatus("👆", `<strong>${toolFor(selectedTool).name} selected.</strong> Tap or click an open spot in the workshop to place it.`);
+          else setStatus("🧰", "<strong>Ready to tinker.</strong> Drag a part into the scene whenever you like.");
+          updateCanvasCursor();
+          renderTools();
         });
-        button.addEventListener("dragover", (event) => { if (!state.running) event.preventDefault(); });
-        button.addEventListener("drop", (event) => {
-          event.preventDefault();
-          const partId = event.dataTransfer.getData("text/plain");
-          if (partId) placePart(partId, Number(button.dataset.slot));
-        });
-      });
-      $("#machine-line").querySelectorAll("[data-remove]").forEach((button) => {
-        button.addEventListener("click", (event) => { event.stopPropagation(); removePart(Number(button.dataset.remove)); });
-      });
-    }
-
-    function renderTray() {
-      const level = currentLevel();
-      const used = state.placed.filter(Boolean).length;
-      $("#tray-count").textContent = `${used} / ${level.parts.length} picked`;
-      $("#parts-list").innerHTML = level.parts.map((part) => {
-        const isUsed = state.placed.includes(part.id);
-        const isSelected = state.selected === part.id;
-        return `<button class="part-card ${isUsed ? "used" : ""} ${isSelected ? "selected" : ""}" type="button" draggable="${!isUsed && !state.running}" data-part="${part.id}" aria-pressed="${isSelected}" aria-label="${part.name}, needs ${signalNames[part.input]}, makes ${signalNames[part.output]}${isUsed ? ", already in machine" : ""}" ${isUsed || state.running ? "disabled" : ""}><span class="part-icon" aria-hidden="true">${part.icon}</span><span class="part-info"><span class="part-name">${part.name}</span><span class="part-description">${part.description}</span><span class="part-connectors">${signalTag(part.input)}<span class="part-arrow" aria-hidden="true">→</span>${signalTag(part.output)}</span></span><span class="part-state ${isUsed ? "in-machine" : ""}">${isUsed ? "IN" : isSelected ? "PICKED" : "DRAG"}</span></button>`;
-      }).join("");
-      $("#parts-list").querySelectorAll("[data-part]").forEach((button) => {
-        button.addEventListener("click", () => selectPart(button.dataset.part));
         button.addEventListener("dragstart", (event) => {
-          if (button.disabled) { event.preventDefault(); return; }
-          event.dataTransfer.setData("text/plain", button.dataset.part);
-          event.dataTransfer.effectAllowed = "move";
-          state.selected = button.dataset.part;
+          if (running) { event.preventDefault(); return; }
+          event.dataTransfer.setData("text/plain", button.dataset.tool);
+          event.dataTransfer.effectAllowed = "copy";
+          selectedTool = button.dataset.tool;
         });
       });
     }
 
-    function render() {
-      const level = currentLevel();
-      $("#level-kicker").textContent = `Puzzle ${String(state.level + 1).padStart(2, "0")} · ${level.chapter}`;
-      $("#puzzle-title").textContent = level.name;
-      $("#objective").textContent = level.objective;
-      $("#goal-stamp").textContent = level.goalLabel;
-      $("#run-button").disabled = state.running;
-      $("#clear-button").disabled = state.running || state.placed.every((part) => !part);
-      $("#run-button").innerHTML = state.running ? "⏳ Machine running" : "▶ Run machine";
-      $("#next-button").hidden = !state.complete || state.level >= levels.length - 1;
-      $("#win-banner").classList.toggle("visible", state.complete);
-      $("#win-banner").innerHTML = state.complete ? `<span aria-hidden="true">✨</span><span>${state.level === levels.length - 1 ? "All puzzles solved. You made the long way around." : "Against all odds, the machine works."}</span><span aria-hidden="true">✨</span>` : "";
-      renderNav();
-      renderMachine();
-      renderTray();
-      renderReport();
+    function toolFor(type) { return tools.find((item) => item.type === type); }
+
+    function setStatus(icon, html) {
+      statusIcon.textContent = icon;
+      statusText.innerHTML = html;
+      announcer.textContent = statusText.textContent;
     }
 
-    function selectPart(partId) {
-      if (state.running) return;
-      const part = currentLevel().parts.find((item) => item.id === partId);
-      if (!part || state.placed.includes(partId)) return;
-      state.selected = state.selected === partId ? null : partId;
-      state.activeSlot = -1;
-      state.passed = [];
-      state.failedSlot = -1;
-      state.complete = false;
-      if (state.selected) setReport("Part picked", `${part.name} needs ${signalNames[part.input]} and makes ${signalNames[part.output]}. Choose a station.`, part.icon);
-      else setReport("Ready when you are", "Choose a part and place it in a station.", "🧰");
-      render();
+    function updateControls() {
+      runButton.innerHTML = running ? "Ⅱ Pause physics" : "▶ Run physics";
+      liveDot.classList.toggle("running", running);
+      renderTools();
     }
 
-    function placePart(partId, slotIndex) {
-      if (state.running) return;
-      const part = currentLevel().parts.find((item) => item.id === partId);
-      if (!part) return;
-      const oldIndex = state.placed.indexOf(partId);
-      if (oldIndex >= 0 && oldIndex !== slotIndex) {
-        state.placed[oldIndex] = state.placed[slotIndex] || null;
+    function updateCanvasCursor() {
+      canvas.classList.toggle("placing", Boolean(selectedTool));
+      canvas.classList.toggle("dragging", Boolean(dragBody));
+    }
+
+    function canvasPoint(event) {
+      const rect = canvas.getBoundingClientRect();
+      return { x: (event.clientX - rect.left) * WORLD_WIDTH / rect.width, y: (event.clientY - rect.top) * WORLD_HEIGHT / rect.height };
+    }
+
+    function placeTool(type, point) {
+      if (!dimensions[type] || running) return;
+      const y = type === "ramp" || type === "spring" ? point.y : point.y;
+      const body = makeBody(type, point.x, y, type === "ramp" ? .24 : 0);
+      world.push(body);
+      selectedId = body.id;
+      selectedTool = null;
+      runSnapshot = null;
+      won = false;
+      setStatus("🧩", `<strong>${toolFor(type).name} added.</strong> Drag it to position; press R to rotate it.`);
+      renderTools();
+      updateCanvasCursor();
+      draw();
+    }
+
+    function containsPoint(body, point) {
+      if (body.sensor || body.type === "ground" || body.type === "wall") return false;
+      const dx = point.x - body.x;
+      const dy = point.y - body.y;
+      if (body.shape === "circle") return Math.hypot(dx, dy) <= body.radius + 5;
+      const cos = Math.cos(body.angle);
+      const sin = Math.sin(body.angle);
+      const localX = dx * cos + dy * sin;
+      const localY = -dx * sin + dy * cos;
+      return Math.abs(localX) <= body.width / 2 + 5 && Math.abs(localY) <= body.height / 2 + 5;
+    }
+
+    function startPointer(event) {
+      const point = canvasPoint(event);
+      canvas.setPointerCapture(event.pointerId);
+      if (selectedTool && !running) {
+        placeTool(selectedTool, point);
+        return;
       }
-      state.placed[slotIndex] = partId;
-      state.selected = null;
-      state.activeSlot = -1;
-      state.passed = [];
-      state.failedSlot = -1;
-      state.complete = false;
-      setReport("Part installed", `${part.name} is in station ${slotIndex + 1}. Keep following the signals.`, part.icon);
-      render();
-    }
-
-    function removePart(slotIndex) {
-      if (state.running) return;
-      const partId = state.placed[slotIndex];
-      if (!partId) return;
-      const part = currentLevel().parts.find((item) => item.id === partId);
-      state.placed[slotIndex] = null;
-      state.selected = null;
-      state.activeSlot = -1;
-      state.passed = [];
-      state.failedSlot = -1;
-      state.complete = false;
-      setReport("Part back in tray", `${part.name} is ready to try somewhere else.`, "↩️");
-      render();
-    }
-
-    function loadLevel(index) {
-      if (state.running || index > state.unlocked) return;
-      state.level = index;
-      state.placed = Array(currentLevel().stations).fill(null);
-      state.selected = null;
-      state.running = false;
-      state.activeSlot = -1;
-      state.passed = [];
-      state.failedSlot = -1;
-      state.complete = false;
-      state.report = { title: "Ready when you are", text: "Choose a part and place it in a station.", icon: "🧰", tone: "" };
-      render();
-    }
-
-    function pause(milliseconds) { return new Promise((resolve) => window.setTimeout(resolve, milliseconds)); }
-
-    async function runMachine() {
-      if (state.running) return;
-      state.running = true;
-      state.selected = null;
-      state.activeSlot = -1;
-      state.passed = [];
-      state.failedSlot = -1;
-      state.complete = false;
-      let signal = currentLevel().start;
-      setReport("Here we go…", `The first nudge is ${signalNames[signal]}.`, "🔵");
-      render();
-      await pause(450);
-
-      for (let index = 0; index < state.placed.length; index += 1) {
-        const partId = state.placed[index];
-        const part = currentLevel().parts.find((item) => item.id === partId);
-        state.activeSlot = index;
-        render();
-        await pause(650);
-        if (!part) {
-          state.failedSlot = index;
-          state.activeSlot = -1;
-          state.running = false;
-          setReport("A station is empty", `The machine reaches station ${index + 1} with a ${signalNames[signal]} nudge and finds nobody home.`, "🫥", "error");
-          render();
-          return;
-        }
-        if (part.input !== signal) {
-          state.failedSlot = index;
-          state.activeSlot = -1;
-          state.running = false;
-          setReport("The chain broke", `${part.name} needs ${signalNames[part.input]}, but arrived with ${signalNames[signal]}. Move a matching part here.`, "🪵", "error");
-          render();
-          return;
-        }
-        signal = part.output;
-        state.passed.push(index);
-        setReport("Nice and unnecessary", part.action, part.icon);
-        render();
-        await pause(380);
+      if (running) return;
+      const body = [...world].reverse().find((item) => item.userPlaced && containsPoint(item, point));
+      if (!body) {
+        selectedId = null;
+        draw();
+        return;
       }
+      selectedId = body.id;
+      dragBody = body;
+      dragOffset = { x: body.x - point.x, y: body.y - point.y };
+      canvas.classList.add("dragging");
+      setStatus("✋", `<strong>${bodyName(body.type)} selected.</strong> Move it anywhere while the simulation is paused.`);
+      draw();
+    }
 
-      state.activeSlot = -1;
-      state.running = false;
-      if (signal === currentLevel().goal) {
-        state.complete = true;
-        state.unlocked = Math.max(state.unlocked, state.level + 1);
-        setReport("Machine accomplished", `It made a ${signalNames[signal].toLowerCase()} happen. Everything went according to the very long plan.`, "🎉", "success");
-        render();
+    function movePointer(event) {
+      if (!dragBody || running) return;
+      const point = canvasPoint(event);
+      dragBody.x = clamp(point.x + dragOffset.x, 10, WORLD_WIDTH - 10);
+      dragBody.y = clamp(point.y + dragOffset.y, 12, WORLD_HEIGHT - 15);
+      dragBody.vx = 0;
+      dragBody.vy = 0;
+      dragBody.angularVelocity = 0;
+      runSnapshot = null;
+      draw();
+    }
+
+    function endPointer() {
+      if (!dragBody) return;
+      dragBody = null;
+      canvas.classList.remove("dragging");
+      draw();
+    }
+
+    function bodyName(type) {
+      return ({ ball: "Marble", domino: "Domino", crate: "Wooden block", ramp: "Ramp", spring: "Springboard", bumper: "Bumper", bell: "Bell" })[type] || type;
+    }
+
+    function rotateSelected() {
+      if (running) return;
+      const body = world.find((item) => item.id === selectedId && item.userPlaced);
+      if (!body) return;
+      body.angle += Math.PI / 12;
+      runSnapshot = null;
+      setStatus("🔄", `<strong>${bodyName(body.type)} rotated.</strong> Keep nudging it into place, or press Space to run.`);
+      draw();
+    }
+
+    function removeSelected() {
+      if (running) return;
+      const index = world.findIndex((item) => item.id === selectedId && item.userPlaced);
+      if (index < 0) return;
+      const [removed] = world.splice(index, 1);
+      selectedId = null;
+      runSnapshot = null;
+      setStatus("🧹", `<strong>${bodyName(removed.type)} removed.</strong> The workshop is ready for another idea.`);
+      draw();
+    }
+
+    function toggleRun() {
+      if (running) {
+        running = false;
+        setStatus("⏸️", "<strong>Physics paused.</strong> Drag pieces to change the setup, then run it again.");
       } else {
-        state.failedSlot = state.placed.length;
-        setReport("So close, yet so elaborate", `The last nudge was ${signalNames[signal]}, but the goal needs ${signalNames[currentLevel().goal]}. Swap the final link.`, "🤔", "error");
-        render();
+        if (!won) runSnapshot = world.map((body) => ({ id: body.id, x: body.x, y: body.y, angle: body.angle, vx: body.vx, vy: body.vy, angularVelocity: body.angularVelocity }));
+        running = true;
+        selectedTool = null;
+        won = false;
+        setStatus("▶️", "<strong>Gravity is on.</strong> Watch the marble, ramps, and dominoes collide.");
+      }
+      accumulator = 0;
+      updateControls();
+      updateCanvasCursor();
+    }
+
+    function resetRun() {
+      if (running) running = false;
+      if (runSnapshot) {
+        for (const saved of runSnapshot) {
+          const body = world.find((item) => item.id === saved.id);
+          if (!body) continue;
+          Object.assign(body, { x: saved.x, y: saved.y, angle: saved.angle, vx: saved.vx, vy: saved.vy, angularVelocity: saved.angularVelocity });
+        }
+      } else {
+        for (const body of world) Object.assign(body, { vx: 0, vy: 0, angularVelocity: 0 });
+      }
+      won = false;
+      selectedTool = null;
+      accumulator = 0;
+      setStatus("↺", "<strong>Back to your build.</strong> Adjust the pieces and try a different arrangement.");
+      updateControls();
+      updateCanvasCursor();
+      draw();
+    }
+
+    function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+
+    function rotateVector(vector, angle) {
+      const c = Math.cos(angle), s = Math.sin(angle);
+      return { x: vector.x * c - vector.y * s, y: vector.x * s + vector.y * c };
+    }
+
+    function vertices(body) {
+      const hw = body.width / 2, hh = body.height / 2;
+      return [{ x: -hw, y: -hh }, { x: hw, y: -hh }, { x: hw, y: hh }, { x: -hw, y: hh }].map((point) => {
+        const rotated = rotateVector(point, body.angle);
+        return { x: body.x + rotated.x, y: body.y + rotated.y };
+      });
+    }
+
+    function axesFor(points) {
+      const axes = [];
+      for (let i = 0; i < points.length; i += 1) {
+        const p = points[i], q = points[(i + 1) % points.length];
+        const dx = q.x - p.x, dy = q.y - p.y;
+        const length = Math.hypot(dx, dy) || 1;
+        axes.push({ x: -dy / length, y: dx / length });
+      }
+      return axes;
+    }
+
+    function project(points, axis) {
+      let min = Infinity, max = -Infinity;
+      for (const point of points) {
+        const value = point.x * axis.x + point.y * axis.y;
+        min = Math.min(min, value);
+        max = Math.max(max, value);
+      }
+      return { min, max };
+    }
+
+    function support(points, axis) {
+      return points.reduce((best, point) => point.x * axis.x + point.y * axis.y > best.x * axis.x + best.y * axis.y ? point : best, points[0]);
+    }
+
+    function boxBox(a, b) {
+      const va = vertices(a), vb = vertices(b);
+      let smallest = Infinity, normal = null;
+      for (const axis of [...axesFor(va), ...axesFor(vb)]) {
+        const pa = project(va, axis), pb = project(vb, axis);
+        const overlap = Math.min(pa.max, pb.max) - Math.max(pa.min, pb.min);
+        if (overlap <= 0) return null;
+        if (overlap < smallest) { smallest = overlap; normal = axis; }
+      }
+      const delta = { x: b.x - a.x, y: b.y - a.y };
+      if (delta.x * normal.x + delta.y * normal.y < 0) normal = { x: -normal.x, y: -normal.y };
+      const pointA = support(va, normal), pointB = support(vb, { x: -normal.x, y: -normal.y });
+      return { normal, penetration: smallest, point: { x: (pointA.x + pointB.x) / 2, y: (pointA.y + pointB.y) / 2 } };
+    }
+
+    function circleCircle(a, b) {
+      let dx = b.x - a.x, dy = b.y - a.y;
+      const distance = Math.hypot(dx, dy);
+      const totalRadius = a.radius + b.radius;
+      if (distance >= totalRadius) return null;
+      if (distance < .0001) { dx = 1; dy = 0; }
+      const normal = { x: dx / (distance || 1), y: dy / (distance || 1) };
+      return { normal, penetration: totalRadius - distance, point: { x: a.x + normal.x * (a.radius - (totalRadius - distance) / 2), y: a.y + normal.y * (a.radius - (totalRadius - distance) / 2) } };
+    }
+
+    function circleBox(circle, box) {
+      const offsetX = circle.x - box.x, offsetY = circle.y - box.y;
+      const cos = Math.cos(box.angle), sin = Math.sin(box.angle);
+      const local = { x: offsetX * cos + offsetY * sin, y: -offsetX * sin + offsetY * cos };
+      const halfW = box.width / 2, halfH = box.height / 2;
+      const closest = { x: clamp(local.x, -halfW, halfW), y: clamp(local.y, -halfH, halfH) };
+      let delta = { x: closest.x - local.x, y: closest.y - local.y };
+      let distance = Math.hypot(delta.x, delta.y);
+      let penetration, localNormal;
+      if (distance > .0001) {
+        if (distance >= circle.radius) return null;
+        localNormal = { x: delta.x / distance, y: delta.y / distance };
+        penetration = circle.radius - distance;
+      } else {
+        const toX = halfW - Math.abs(local.x), toY = halfH - Math.abs(local.y);
+        if (toX < toY) {
+          const side = Math.sign(local.x) || 1;
+          closest.x = side * halfW;
+          localNormal = { x: -side, y: 0 };
+          penetration = circle.radius + toX;
+        } else {
+          const side = Math.sign(local.y) || 1;
+          closest.y = side * halfH;
+          localNormal = { x: 0, y: -side };
+          penetration = circle.radius + toY;
+        }
+      }
+      const normal = { x: localNormal.x * cos - localNormal.y * sin, y: localNormal.x * sin + localNormal.y * cos };
+      const rotatedContact = rotateVector(closest, box.angle);
+      return { normal, penetration, point: { x: box.x + rotatedContact.x, y: box.y + rotatedContact.y } };
+    }
+
+    function collision(a, b) {
+      if (a.sensor || b.sensor) return null;
+      if (a.shape === "circle" && b.shape === "circle") return circleCircle(a, b);
+      if (a.shape === "circle" && b.shape === "box") return circleBox(a, b);
+      if (a.shape === "box" && b.shape === "circle") {
+        const hit = circleBox(b, a);
+        if (hit) hit.normal = { x: -hit.normal.x, y: -hit.normal.y };
+        return hit;
+      }
+      return boxBox(a, b);
+    }
+
+    function cross(ax, ay, bx, by) { return ax * by - ay * bx; }
+
+    function resolve(a, b, hit) {
+      const { normal, penetration, point } = hit;
+      const inverseTotal = a.inverseMass + b.inverseMass;
+      if (!inverseTotal) return;
+      const correction = Math.max(penetration - .25, 0) / inverseTotal * .78;
+      a.x -= normal.x * correction * a.inverseMass;
+      a.y -= normal.y * correction * a.inverseMass;
+      b.x += normal.x * correction * b.inverseMass;
+      b.y += normal.y * correction * b.inverseMass;
+
+      const ra = { x: point.x - a.x, y: point.y - a.y };
+      const rb = { x: point.x - b.x, y: point.y - b.y };
+      const velA = { x: a.vx - a.angularVelocity * ra.y, y: a.vy + a.angularVelocity * ra.x };
+      const velB = { x: b.vx - b.angularVelocity * rb.y, y: b.vy + b.angularVelocity * rb.x };
+      const relative = { x: velB.x - velA.x, y: velB.y - velA.y };
+      const alongNormal = relative.x * normal.x + relative.y * normal.y;
+      if (alongNormal > 0) return;
+      const raCrossN = cross(ra.x, ra.y, normal.x, normal.y);
+      const rbCrossN = cross(rb.x, rb.y, normal.x, normal.y);
+      const denominator = inverseTotal + raCrossN ** 2 * a.inverseInertia + rbCrossN ** 2 * b.inverseInertia;
+      const restitution = Math.min(a.restitution, b.restitution);
+      const impulseMagnitude = -(1 + restitution) * alongNormal / Math.max(.0001, denominator);
+      const impulse = { x: normal.x * impulseMagnitude, y: normal.y * impulseMagnitude };
+      a.vx -= impulse.x * a.inverseMass;
+      a.vy -= impulse.y * a.inverseMass;
+      a.angularVelocity -= cross(ra.x, ra.y, impulse.x, impulse.y) * a.inverseInertia;
+      b.vx += impulse.x * b.inverseMass;
+      b.vy += impulse.y * b.inverseMass;
+      b.angularVelocity += cross(rb.x, rb.y, impulse.x, impulse.y) * b.inverseInertia;
+
+      const tangentVelocity = { x: relative.x - alongNormal * normal.x, y: relative.y - alongNormal * normal.y };
+      const tangentLength = Math.hypot(tangentVelocity.x, tangentVelocity.y);
+      if (tangentLength < .0001) return;
+      const tangent = { x: tangentVelocity.x / tangentLength, y: tangentVelocity.y / tangentLength };
+      const raCrossT = cross(ra.x, ra.y, tangent.x, tangent.y);
+      const rbCrossT = cross(rb.x, rb.y, tangent.x, tangent.y);
+      const tangentDenominator = inverseTotal + raCrossT ** 2 * a.inverseInertia + rbCrossT ** 2 * b.inverseInertia;
+      let frictionImpulse = -(relative.x * tangent.x + relative.y * tangent.y) / Math.max(.0001, tangentDenominator);
+      const friction = Math.sqrt(a.friction * b.friction);
+      frictionImpulse = clamp(frictionImpulse, -impulseMagnitude * friction, impulseMagnitude * friction);
+      a.vx -= tangent.x * frictionImpulse * a.inverseMass;
+      a.vy -= tangent.y * frictionImpulse * a.inverseMass;
+      a.angularVelocity -= cross(ra.x, ra.y, tangent.x * frictionImpulse, tangent.y * frictionImpulse) * a.inverseInertia;
+      b.vx += tangent.x * frictionImpulse * b.inverseMass;
+      b.vy += tangent.y * frictionImpulse * b.inverseMass;
+      b.angularVelocity += cross(rb.x, rb.y, tangent.x * frictionImpulse, tangent.y * frictionImpulse) * b.inverseInertia;
+    }
+
+    function physicsStep(dt) {
+      for (const body of world) {
+        if (!body.dynamic) continue;
+        body.vy += gravity * dt;
+        body.x += body.vx * dt;
+        body.y += body.vy * dt;
+        body.angle += body.angularVelocity * dt;
+        body.vx *= .9995;
+        body.vy *= .9995;
+        body.angularVelocity *= .9985;
+        body.vx = clamp(body.vx, -1300, 1300);
+        body.vy = clamp(body.vy, -1300, 1300);
+        body.angularVelocity = clamp(body.angularVelocity, -16, 16);
+      }
+      for (let iteration = 0; iteration < 3; iteration += 1) {
+        for (let i = 0; i < world.length; i += 1) {
+          for (let j = i + 1; j < world.length; j += 1) {
+            const a = world[i], b = world[j];
+            if (!a.inverseMass && !b.inverseMass) continue;
+            const hit = collision(a, b);
+            if (hit) resolve(a, b, hit);
+          }
+        }
+      }
+      checkGoal();
+    }
+
+    function checkGoal() {
+      if (won) return;
+      for (const body of world) {
+        if (!body.dynamic) continue;
+        const reach = body.shape === "circle" ? body.radius + TARGET.radius : Math.hypot(body.width, body.height) / 2 + TARGET.radius * .5;
+        if (Math.hypot(body.x - TARGET.x, body.y - TARGET.y) < reach) {
+          won = true;
+          running = false;
+          setStatus("🔔", "<strong>Ding! You hit the target.</strong> That was a wonderfully long way to make a sound.");
+          updateControls();
+          break;
+        }
       }
     }
 
-    $("#clear-button").addEventListener("click", () => {
-      if (state.running) return;
-      state.placed.fill(null);
-      state.selected = null;
-      state.activeSlot = -1;
-      state.passed = [];
-      state.failedSlot = -1;
-      state.complete = false;
-      setReport("Fresh start", "The stations are clear. Give the machine another go.", "🧹");
-      render();
-    });
-    $("#run-button").addEventListener("click", runMachine);
-    $("#next-button").addEventListener("click", () => loadLevel(state.level + 1));
+    function drawGrid() {
+      ctx.fillStyle = "#faf7ec";
+      ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+      ctx.strokeStyle = "rgba(107, 125, 105, .095)";
+      ctx.lineWidth = 1;
+      for (let x = 20; x < WORLD_WIDTH; x += 40) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_HEIGHT); ctx.stroke();
+      }
+      for (let y = 20; y < WORLD_HEIGHT; y += 40) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(WORLD_WIDTH, y); ctx.stroke();
+      }
+      ctx.fillStyle = "rgba(89, 120, 95, .14)";
+      for (let x = 20; x < WORLD_WIDTH; x += 40) {
+        for (let y = 20; y < WORLD_HEIGHT; y += 40) {
+          ctx.beginPath(); ctx.arc(x, y, 1.2, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+    }
 
-    loadLevel(0);
+    function drawGround() {
+      ctx.fillStyle = "#e5d9bf";
+      ctx.fillRect(0, 536, WORLD_WIDTH, 64);
+      ctx.fillStyle = "#526c53";
+      ctx.fillRect(0, 536, WORLD_WIDTH, 5);
+      ctx.strokeStyle = "rgba(105, 91, 66, .2)";
+      ctx.lineWidth = 1;
+      for (let x = 10; x < WORLD_WIDTH; x += 31) {
+        ctx.beginPath(); ctx.moveTo(x, 550); ctx.lineTo(x - 13, 562); ctx.stroke();
+      }
+    }
+
+    function drawTarget() {
+      ctx.save();
+      ctx.translate(TARGET.x, TARGET.y);
+      ctx.strokeStyle = won ? "#4c9b65" : "rgba(173, 132, 52, .5)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath(); ctx.arc(0, 0, TARGET.radius, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = won ? "#dff0df" : "#fff0c9";
+      ctx.beginPath(); ctx.arc(0, 0, 17, 0, Math.PI * 2); ctx.fill();
+      ctx.font = "25px ui-rounded, sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("🔔", 0, 1);
+      ctx.restore();
+      ctx.fillStyle = "#8e7746";
+      ctx.font = "800 10px ui-rounded, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("GOAL", TARGET.x, TARGET.y - 39);
+    }
+
+    function drawBody(body) {
+      if (body.type === "ground" || body.type === "wall" || body.sensor) return;
+      ctx.save();
+      ctx.translate(body.x, body.y);
+      ctx.rotate(body.angle);
+      if (body.type === "ball") {
+        const gradient = ctx.createRadialGradient(-5, -6, 2, 1, 2, body.radius + 4);
+        gradient.addColorStop(0, "#7bd1ef");
+        gradient.addColorStop(.52, "#3198c8");
+        gradient.addColorStop(1, "#18628e");
+        ctx.fillStyle = gradient;
+        ctx.beginPath(); ctx.arc(0, 0, body.radius, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,.8)";
+        ctx.beginPath(); ctx.arc(-5, -6, 3.5, 0, Math.PI * 2); ctx.fill();
+      } else if (body.type === "bumper") {
+        ctx.fillStyle = "#e8894a";
+        ctx.beginPath(); ctx.arc(0, 0, body.radius, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#b85736"; ctx.lineWidth = 3; ctx.stroke();
+        ctx.fillStyle = "rgba(255,255,255,.45)";
+        ctx.beginPath(); ctx.arc(-7, -7, 5, 0, Math.PI * 2); ctx.fill();
+      } else {
+        const x = -body.width / 2, y = -body.height / 2;
+        let fill = "#bc8050", edge = "#815636";
+        if (body.type === "domino") { fill = "#e9d5a7"; edge = "#9c7845"; }
+        if (body.type === "spring") { fill = "#e87650"; edge = "#a84535"; }
+        if (body.type === "crate") { fill = "#bf8c57"; edge = "#815936"; }
+        ctx.fillStyle = fill;
+        ctx.strokeStyle = edge;
+        ctx.lineWidth = body.type === "domino" ? 2 : 3;
+        ctx.beginPath(); ctx.roundRect(x, y, body.width, body.height, body.type === "domino" ? 4 : 6); ctx.fill(); ctx.stroke();
+        if (body.type === "ramp" || body.type === "spring") {
+          ctx.strokeStyle = body.type === "spring" ? "#ffe3a0" : "rgba(91,56,35,.44)";
+          ctx.lineWidth = 2;
+          if (body.type === "spring") {
+            ctx.beginPath();
+            const left = -body.width / 2 + 10, right = body.width / 2 - 10, midY = -body.height / 2 - 1;
+            ctx.moveTo(left, midY);
+            for (let x = left; x <= right; x += 12) ctx.lineTo(x, midY - ((Math.round((x - left) / 12) % 2) ? 0 : 8));
+            ctx.lineTo(right, midY); ctx.stroke();
+          } else {
+            for (let x = -body.width / 2 + 18; x < body.width / 2 - 8; x += 27) {
+              ctx.beginPath(); ctx.moveTo(x, -body.height / 2 + 3); ctx.lineTo(x + 8, body.height / 2 - 3); ctx.stroke();
+            }
+          }
+        } else if (body.type === "domino") {
+          ctx.fillStyle = "#b34f3f";
+          ctx.beginPath(); ctx.arc(0, -body.height * .23, 2.5, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(0, body.height * .23, 2.5, 0, Math.PI * 2); ctx.fill();
+        } else if (body.type === "crate") {
+          ctx.strokeStyle = "rgba(91,56,35,.42)"; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.moveTo(x + 6, y + 6); ctx.lineTo(-5, 0); ctx.lineTo(x + 6, y + body.height - 6); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(body.width - 6 + x, y + 6); ctx.lineTo(5, 0); ctx.lineTo(body.width - 6 + x, y + body.height - 6); ctx.stroke();
+        }
+      }
+      if (body.id === selectedId && !running) {
+        ctx.strokeStyle = "#267651";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 4]);
+        if (body.shape === "circle") { ctx.beginPath(); ctx.arc(0, 0, body.radius + 6, 0, Math.PI * 2); ctx.stroke(); }
+        else { ctx.strokeRect(-body.width / 2 - 5, -body.height / 2 - 5, body.width + 10, body.height + 10); }
+      }
+      ctx.restore();
+    }
+
+    function draw() {
+      const rect = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      const pixelWidth = Math.max(1, Math.round(rect.width * ratio));
+      const pixelHeight = Math.max(1, Math.round(rect.height * ratio));
+      if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+        canvas.width = pixelWidth;
+        canvas.height = pixelHeight;
+      }
+      ctx.setTransform(canvas.width / WORLD_WIDTH, 0, 0, canvas.height / WORLD_HEIGHT, 0, 0);
+      drawGrid();
+      drawGround();
+      drawTarget();
+      for (const body of world) drawBody(body);
+      if (selectedTool) {
+        ctx.fillStyle = "rgba(39, 102, 77, .82)";
+        ctx.font = "800 11px ui-rounded, sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText(`PLACE ${toolFor(selectedTool).name.toUpperCase()} · TAP OR CLICK`, 18, 27);
+      }
+    }
+
+    function animate(now) {
+      const elapsed = Math.min(.06, (now - lastFrame) / 1000);
+      lastFrame = now;
+      if (running) {
+        accumulator += elapsed;
+        while (accumulator >= FIXED_STEP) {
+          physicsStep(FIXED_STEP);
+          accumulator -= FIXED_STEP;
+          if (!running) { accumulator = 0; break; }
+        }
+      }
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    canvas.addEventListener("pointerdown", startPointer);
+    canvas.addEventListener("pointermove", movePointer);
+    canvas.addEventListener("pointerup", endPointer);
+    canvas.addEventListener("pointercancel", endPointer);
+    canvas.addEventListener("dragover", (event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; });
+    canvas.addEventListener("drop", (event) => {
+      event.preventDefault();
+      if (running) return;
+      const type = event.dataTransfer.getData("text/plain");
+      if (dimensions[type]) placeTool(type, canvasPoint(event));
+    });
+    document.querySelector("#canvas-wrap").addEventListener("dragover", (event) => event.preventDefault());
+    document.querySelector("#canvas-wrap").addEventListener("drop", (event) => {
+      if (event.target === canvas) return;
+      event.preventDefault();
+      if (running) return;
+      const type = event.dataTransfer.getData("text/plain");
+      if (dimensions[type]) placeTool(type, canvasPoint(event));
+    });
+    runButton.addEventListener("click", toggleRun);
+    document.querySelector("#reset-run").addEventListener("click", resetRun);
+    document.querySelector("#reset-layout").addEventListener("click", buildStarter);
+    gravitySlider.addEventListener("input", () => {
+      gravity = Number(gravitySlider.value) * 100;
+      gravityValue.value = `${Number(gravitySlider.value).toFixed(1)} m/s²`;
+      gravityValue.textContent = gravityValue.value;
+    });
+    window.addEventListener("keydown", (event) => {
+      if (event.target instanceof HTMLInputElement) return;
+      if (event.code === "Space") { event.preventDefault(); toggleRun(); }
+      else if (event.key.toLowerCase() === "r") rotateSelected();
+      else if (event.key === "Delete" || event.key === "Backspace") { event.preventDefault(); removeSelected(); }
+      else if (event.key === "Escape") { selectedTool = null; selectedId = null; updateCanvasCursor(); renderTools(); draw(); }
+    });
+    window.addEventListener("resize", draw);
+
+    buildStarter();
+    requestAnimationFrame(animate);
   </script>
 </body>
 </html>
