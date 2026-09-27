@@ -273,8 +273,8 @@
         makeBody("wall", 1020, 300, 0, { userPlaced: false }),
         makeBody("ramp", 200, 438, .34),
         makeBody("bell", TARGET.x, TARGET.y),
-        ...Array.from({ length: 10 }, (_, index) => makeBody("domino", 422 + index * 31, 510)),
-        makeBody("ball", 104, 369)
+        ...Array.from({ length: 10 }, (_, index) => makeBody("domino", 422 + index * 31, 506)),
+        makeBody("ball", 130, 380)
       ];
       selectedId = null;
       selectedTool = null;
@@ -497,10 +497,6 @@
       return { min, max };
     }
 
-    function support(points, axis) {
-      return points.reduce((best, point) => point.x * axis.x + point.y * axis.y > best.x * axis.x + best.y * axis.y ? point : best, points[0]);
-    }
-
     function boxBox(a, b) {
       const va = vertices(a), vb = vertices(b);
       let smallest = Infinity, normal = null;
@@ -512,8 +508,22 @@
       }
       const delta = { x: b.x - a.x, y: b.y - a.y };
       if (delta.x * normal.x + delta.y * normal.y < 0) normal = { x: -normal.x, y: -normal.y };
-      const pointA = support(va, normal), pointB = support(vb, { x: -normal.x, y: -normal.y });
-      return { normal, penetration: smallest, point: { x: (pointA.x + pointB.x) / 2, y: (pointA.y + pointB.y) / 2 } };
+      // Keep the impulse on the overlapping faces; opposite support corners may be far apart on long platforms.
+      const tangent = { x: -normal.y, y: normal.x };
+      const tangentA = project(va, tangent), tangentB = project(vb, tangent);
+      const tangentStart = Math.max(tangentA.min, tangentB.min);
+      const tangentEnd = Math.min(tangentA.max, tangentB.max);
+      const tangentPosition = tangentStart <= tangentEnd
+        ? (tangentStart + tangentEnd) / 2
+        : (Math.min(tangentA.max, tangentB.max) + Math.max(tangentA.min, tangentB.min)) / 2;
+      const normalA = project(va, normal).max;
+      const normalB = project(vb, normal).min;
+      const normalPosition = (normalA + normalB) / 2;
+      const point = {
+        x: normal.x * normalPosition + tangent.x * tangentPosition,
+        y: normal.y * normalPosition + tangent.y * tangentPosition
+      };
+      return { normal, penetration: smallest, point };
     }
 
     function circleCircle(a, b) {
