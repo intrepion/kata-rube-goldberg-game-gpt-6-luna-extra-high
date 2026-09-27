@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5efdf">
+  <title>Long Way Around — a Rube Goldberg puzzle game</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f5efdf;
+      --paper-deep: #e9dfc9;
+      --ink: #202a24;
+      --muted: #69736a;
+      --green: #27664d;
+      --green-dark: #1b4a39;
+      --orange: #e66d3b;
+      --line: #d9d0bd;
+      --card: #fffdf7;
+      --shadow: 0 14px 34px rgb(41 46 34 / 9%);
+      font-family: ui-rounded, "Avenir Next", Avenir, "Segoe UI", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: radial-gradient(#bcb29a 0.65px, transparent 0.65px);
+      background-size: 17px 17px;
+    }
+
+    button { font: inherit; }
+
+    .page { width: min(1440px, 100%); margin: 0 auto; padding: 26px 38px 36px; }
+
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
+    .brand-mark { display: grid; width: 38px; height: 38px; place-items: center; border: 2px solid var(--ink); border-radius: 50%; background: #f7b755; font-size: 21px; transform: rotate(-12deg); }
+    .brand-name { font-size: 13px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+    .top-note { color: var(--muted); font-size: 12px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+
+    .intro { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 43px 0 22px; }
+    .eyebrow { margin: 0 0 9px; color: var(--green); font-size: 12px; font-weight: 900; letter-spacing: .17em; text-transform: uppercase; }
+    h1 { max-width: 760px; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(36px, 5vw, 64px); font-weight: 700; letter-spacing: -.045em; line-height: .99; }
+    .intro-copy { max-width: 300px; margin: 0 0 3px; color: var(--muted); font-size: 15px; line-height: 1.55; }
+
+    .level-nav { display: flex; gap: 8px; margin: 28px 0 18px; }
+    .level-tab { display: inline-flex; align-items: center; gap: 9px; min-height: 39px; padding: 7px 14px; border: 1px solid #cbc3b1; border-radius: 999px; color: #626b62; background: rgb(255 253 247 / 55%); cursor: pointer; font-size: 12px; font-weight: 850; transition: .18s ease; }
+    .level-tab .tab-number { display: grid; width: 20px; height: 20px; place-items: center; border-radius: 50%; background: #e5dece; font-size: 10px; }
+    .level-tab:hover:not(:disabled) { border-color: var(--green); color: var(--green-dark); transform: translateY(-1px); }
+    .level-tab[aria-current="step"] { border-color: var(--green-dark); color: white; background: var(--green-dark); }
+    .level-tab[aria-current="step"] .tab-number { color: var(--green-dark); background: #f5d17b; }
+    .level-tab:disabled { cursor: not-allowed; opacity: .52; }
+
+    .workbench { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(310px, .8fr); align-items: start; gap: 19px; }
+    .panel { overflow: hidden; border: 1px solid #ded6c4; border-radius: 20px; background: var(--card); box-shadow: var(--shadow); }
+    .machine-panel { min-width: 0; }
+    .panel-head { display: flex; align-items: start; justify-content: space-between; gap: 14px; padding: 24px 25px 18px; }
+    .section-kicker { margin: 0 0 6px; color: var(--muted); font-size: 10px; font-weight: 950; letter-spacing: .16em; text-transform: uppercase; }
+    h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 25px; letter-spacing: -.025em; }
+    .objective { margin: 8px 0 0; color: #5a655c; font-size: 13px; }
+    .goal-stamp { flex: 0 0 auto; padding: 9px 12px; border: 1px dashed #cc9e55; border-radius: 12px; color: #8a541f; background: #fff4d9; font-size: 11px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; transform: rotate(2deg); }
+
+    .machine-scroll { overflow-x: auto; padding: 17px 24px 22px; scrollbar-color: #c8bfae transparent; scrollbar-width: thin; }
+    .machine-line { display: flex; align-items: center; min-width: max-content; gap: 5px; }
+    .endpoint { display: flex; flex: 0 0 84px; flex-direction: column; align-items: center; justify-content: center; min-height: 146px; padding: 8px 6px; border: 1px solid #ded6c4; border-radius: 15px; background: #f8f4e9; text-align: center; }
+    .endpoint.goal { background: #eff5e9; border-color: #ccdbc8; }
+    .endpoint-icon { display: grid; width: 45px; height: 45px; place-items: center; margin-bottom: 8px; border-radius: 14px; background: white; box-shadow: 0 4px 10px rgb(41 46 34 / 7%); font-size: 26px; }
+    .endpoint-label { color: var(--muted); font-size: 9px; font-weight: 950; letter-spacing: .13em; text-transform: uppercase; }
+    .endpoint-name { margin: 4px 0 7px; font-family: Georgia, "Times New Roman", serif; font-size: 14px; font-weight: 700; }
+    .signal { display: inline-flex; align-items: center; justify-content: center; min-height: 20px; padding: 3px 7px; border-radius: 999px; background: #e8e5dc; color: #575d55; font-size: 9px; font-weight: 950; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+    .sig-drop { color: #7048a1; background: #eee5fa; }
+    .sig-roll { color: #236785; background: #def3fb; }
+    .sig-tip { color: #955024; background: #ffecd8; }
+    .sig-lift { color: #72511c; background: #f8eab7; }
+    .sig-spin { color: #9b3d62; background: #f9e2ed; }
+    .sig-ring { color: #27664d; background: #dff0df; }
+    .sig-wind { color: #356d70; background: #dff2ed; }
+    .sig-knock { color: #80511e; background: #f6e8c9; }
+    .sig-heat { color: #a34625; background: #ffe1d0; }
+    .sig-toast { color: #805522; background: #f7ebc8; }
+    .sig-push { color: #6252a4; background: #e8e3fb; }
+    .sig-bounce { color: #8c4b85; background: #f4e1f3; }
+    .sig-pull { color: #386340; background: #e0efd9; }
+    .sig-clink { color: #655823; background: #f4efc9; }
+    .sig-light { color: #966111; background: #fff1bf; }
+    .sig-slide, .sig-breeze { color: #536476; background: #e7edf3; }
+
+    .flow-arrow { position: relative; display: grid; flex: 0 0 19px; height: 26px; place-items: center; color: #aca48f; font-size: 16px; }
+    .flow-arrow::before { position: absolute; top: 12px; left: 0; width: 100%; height: 2px; background: currentColor; content: ""; opacity: .5; }
+    .flow-arrow span { z-index: 1; padding: 0 3px; background: var(--card); }
+    .flow-arrow.active { color: var(--orange); animation: pulse .5s ease-in-out infinite alternate; }
+    .flow-arrow.bad { color: #d64639; }
+    @keyframes pulse { to { transform: translateX(3px); } }
+
+    .slot { position: relative; display: block; flex: 0 0 96px; min-height: 146px; border: 1.5px dashed #c9c0ae; border-radius: 15px; background: #fffdf8; color: var(--ink); text-align: center; transition: .18s ease; }
+    .slot:hover:not(:has(.slot-main:disabled)), .slot.selected-target { border-color: var(--green); background: #f1f8ed; box-shadow: 0 0 0 3px rgb(39 102 77 / 9%); }
+    .slot.filled { border-style: solid; border-color: #b6c9af; background: #f7fbf2; }
+    .slot.running { border-color: #ed9b44; box-shadow: 0 0 0 4px rgb(237 155 68 / 18%); transform: translateY(-4px); }
+    .slot.passed { border-color: #5b9a6c; }
+    .slot.failed { border-color: #d55243; background: #fff1ed; box-shadow: 0 0 0 4px rgb(213 82 67 / 13%); }
+    .slot-main { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 11px 5px 9px; border: 0; border-radius: inherit; color: inherit; background: transparent; cursor: pointer; text-align: center; }
+    .slot-main:focus-visible { outline: 3px solid #4c8f67; outline-offset: 3px; }
+    .slot-main:disabled { cursor: default; }
+    .slot-number { position: absolute; top: 7px; left: 9px; color: #9b9587; font-size: 9px; font-weight: 900; }
+    .slot-icon { display: grid; width: 43px; height: 42px; place-items: center; margin-bottom: 6px; border-radius: 12px; background: white; box-shadow: 0 3px 9px rgb(41 46 34 / 8%); font-size: 24px; }
+    .slot-title { max-width: 84px; overflow: hidden; color: #344239; font-size: 10px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+    .slot-placeholder { color: #81877f; font-size: 11px; font-weight: 850; }
+    .slot-hint { margin-top: 4px; color: #a19a8a; font-size: 9px; }
+    .slot-signals { display: flex; align-items: center; gap: 4px; margin-top: 7px; }
+    .slot-signals .signal { min-height: 18px; padding: 2px 5px; font-size: 8px; }
+    .slot-remove { position: absolute; top: 5px; right: 7px; display: grid; width: 22px; height: 22px; place-items: center; border: 0; border-radius: 50%; color: #8d6257; background: transparent; cursor: pointer; font-size: 16px; line-height: 1; }
+    .slot-remove:hover { color: white; background: #d55243; }
+    .run-orb { display: none; position: absolute; z-index: 2; top: 3px; left: 5px; width: 13px; height: 13px; border: 2px solid #fff; border-radius: 50%; background: var(--orange); box-shadow: 0 1px 4px #6b371e; }
+    .slot.running .run-orb { display: block; animation: orbit .65s ease-in-out infinite alternate; }
+    @keyframes orbit { to { transform: translate(92px, 7px); } }
+
+    .board-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 24px 18px; border-top: 1px solid #eee8db; background: #fbf8ef; }
+    .run-report { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .report-icon { display: grid; flex: 0 0 36px; width: 36px; height: 36px; place-items: center; border: 1px solid #d7d2c2; border-radius: 11px; background: white; font-size: 18px; }
+    .report-copy { min-width: 0; }
+    .report-title { margin: 0 0 2px; font-size: 11px; font-weight: 950; }
+    .report-text { margin: 0; overflow: hidden; color: #69736a; font-size: 11px; line-height: 1.4; text-overflow: ellipsis; }
+    .report-copy.success .report-title { color: var(--green); }
+    .report-copy.error .report-title { color: #bb4436; }
+    .board-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
+    .button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 9px 15px; border: 1px solid transparent; border-radius: 11px; cursor: pointer; font-size: 11px; font-weight: 950; transition: .15s ease; }
+    .button:disabled { cursor: wait; opacity: .56; }
+    .button-primary { color: white; background: var(--green); box-shadow: 0 4px 0 var(--green-dark); }
+    .button-primary:hover:not(:disabled) { background: #337c5e; transform: translateY(-1px); box-shadow: 0 5px 0 var(--green-dark); }
+    .button-secondary { border-color: #ded6c4; color: #5d675f; background: white; }
+    .button-secondary:hover:not(:disabled) { border-color: #abb7a7; color: var(--green-dark); }
+    .button-next { color: #634615; background: #f5ce6b; box-shadow: 0 4px 0 #c79235; }
+    .button-next:hover:not(:disabled) { background: #f8d983; transform: translateY(-1px); }
+    .button[hidden] { display: none; }
+
+    .tray-panel .panel-head { padding-bottom: 13px; }
+    .tray-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
+    .tray-count { padding: 5px 8px; border-radius: 999px; color: #617064; background: #eef2e8; font-size: 10px; font-weight: 900; }
+    .tray-instructions { margin: 0; padding: 0 24px 15px; color: #798078; font-size: 11px; line-height: 1.45; }
+    .parts-list { display: grid; gap: 9px; padding: 0 15px 17px; }
+    .part-card { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; padding: 10px; border: 1px solid #e4ddce; border-radius: 13px; color: var(--ink); background: #fffefa; cursor: grab; text-align: left; transition: .16s ease; }
+    .part-card:hover:not(:disabled) { border-color: #9db89c; background: #f8fcf4; box-shadow: 0 4px 12px rgb(41 46 34 / 6%); transform: translateY(-1px); }
+    .part-card:active { cursor: grabbing; }
+    .part-card.selected { border-color: var(--green); background: #edf6e9; box-shadow: 0 0 0 3px rgb(39 102 77 / 12%); }
+    .part-card.used { opacity: .48; cursor: default; }
+    .part-card:disabled { cursor: default; }
+    .part-icon { display: grid; width: 43px; height: 43px; place-items: center; border-radius: 11px; background: #f3efdf; font-size: 24px; }
+    .part-info { min-width: 0; }
+    .part-name { display: block; overflow: hidden; font-family: Georgia, "Times New Roman", serif; font-size: 13px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .part-description { display: block; margin-top: 3px; overflow: hidden; color: #788076; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .part-connectors { display: flex; align-items: center; justify-content: flex-end; gap: 3px; margin-top: 6px; }
+    .part-connectors .signal { min-height: 16px; padding: 2px 5px; font-size: 7px; }
+    .part-arrow { color: #aaa28f; font-size: 10px; }
+    .part-state { color: #8b9187; font-size: 9px; font-weight: 900; text-align: right; }
+    .part-state.in-machine { color: var(--green); }
+    .legend { display: flex; align-items: center; gap: 7px; padding: 11px 18px; border-top: 1px solid #eee8db; color: #777e75; background: #fbf8ef; font-size: 10px; line-height: 1.4; }
+    .legend-mark { color: var(--green); font-size: 15px; }
+
+    .howto { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 17px 0 0; color: #69736a; font-size: 11px; text-align: center; }
+    .howto strong { color: #3e4d41; }
+    .howto-separator { color: #b8ae98; }
+    .win-banner { display: none; align-items: center; justify-content: center; gap: 10px; margin-top: 16px; padding: 12px 16px; border: 1px solid #c1d7b6; border-radius: 13px; color: #285e3d; background: #eff7e8; font-family: Georgia, "Times New Roman", serif; font-size: 15px; text-align: center; }
+    .win-banner.visible { display: flex; animation: pop .35s ease-out; }
+    @keyframes pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+    .footer-note { margin: 28px 0 0; color: #85877c; font-size: 10px; text-align: center; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+
+    @media (max-width: 1200px) {
+      .page { padding: 22px 22px 30px; }
+      .workbench { grid-template-columns: minmax(0, 1fr); }
+      .tray-panel { display: grid; grid-template-columns: 1fr; }
+      .parts-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 620px) {
+      .page { padding: 17px 13px 25px; }
+      .top-note { display: none; }
+      .intro { align-items: start; flex-direction: column; gap: 11px; margin: 34px 0 18px; }
+      h1 { font-size: clamp(38px, 11vw, 55px); }
+      .intro-copy { max-width: 420px; font-size: 13px; }
+      .level-nav { overflow-x: auto; margin: 19px -3px 13px; padding: 3px; }
+      .level-tab { flex: 0 0 auto; padding: 7px 11px; }
+      .panel { border-radius: 16px; }
+      .panel-head { padding: 19px 17px 14px; }
+      .goal-stamp { max-width: 102px; font-size: 9px; text-align: center; }
+      .machine-scroll { padding: 14px 14px 18px; }
+      .board-footer { align-items: stretch; flex-direction: column; padding: 13px 15px 15px; }
+      .board-actions { display: grid; grid-template-columns: 1fr 1fr; }
+      .button { min-height: 42px; padding: 8px 10px; }
+      .button-next { grid-column: 1 / -1; }
+      .parts-list { grid-template-columns: 1fr; gap: 7px; padding: 0 11px 14px; }
+      .part-card { padding: 8px; }
+      .tray-panel .panel-head { padding: 17px 16px 11px; }
+      .tray-instructions { padding: 0 16px 12px; }
+      .howto { align-items: start; flex-wrap: wrap; gap: 5px 7px; font-size: 10px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page" id="game">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Long Way Around home">
+        <span class="brand-mark" aria-hidden="true">⚙</span>
+        <span class="brand-name">Long Way Around</span>
+      </a>
+      <div class="top-note">A tiny machine-building puzzle</div>
+    </header>
+
+    <section class="intro" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">A Rube Goldberg puzzle game</p>
+        <h1 id="page-title">The long way<br>is the fun way.</h1>
+      </div>
+      <p class="intro-copy">Build a beautifully unnecessary chain of cause and effect. Fit the right parts together, then let the little machine do its thing.</p>
+    </section>
+
+    <nav class="level-nav" id="level-nav" aria-label="Puzzles"></nav>
+
+    <div class="workbench">
+      <section class="panel machine-panel" aria-labelledby="puzzle-title">
+        <div class="panel-head">
+          <div>
+            <p class="section-kicker" id="level-kicker">Puzzle 01 · Workshop</p>
+            <h2 id="puzzle-title">The Bell Situation</h2>
+            <p class="objective" id="objective"></p>
+          </div>
+          <div class="goal-stamp" id="goal-stamp">Make it ring</div>
+        </div>
+
+        <div class="machine-scroll" aria-label="Machine sequence. Scroll horizontally on small screens.">
+          <div class="machine-line" id="machine-line"></div>
+        </div>
+
+        <div class="board-footer">
+          <div class="run-report" aria-live="polite" aria-atomic="true">
+            <div class="report-icon" id="report-icon" aria-hidden="true">🧰</div>
+            <div class="report-copy" id="report-copy">
+              <p class="report-title" id="report-title">Ready when you are</p>
+              <p class="report-text" id="report-text"></p>
+            </div>
+          </div>
+          <div class="board-actions">
+            <button class="button button-secondary" id="clear-button" type="button">↺ Clear</button>
+            <button class="button button-primary" id="run-button" type="button">▶ Run machine</button>
+            <button class="button button-next" id="next-button" type="button" hidden>Next puzzle&nbsp; →</button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel tray-panel" aria-labelledby="tray-title">
+        <div class="panel-head">
+          <div class="tray-title-row">
+            <div>
+              <p class="section-kicker">Useful-ish objects</p>
+              <h2 id="tray-title">Parts tray</h2>
+            </div>
+            <span class="tray-count" id="tray-count"></span>
+          </div>
+        </div>
+        <p class="tray-instructions">Each part passes one kind of nudge to the next. Follow the little signal tags to find a chain that works.</p>
+        <div class="parts-list" id="parts-list"></div>
+        <div class="legend"><span class="legend-mark" aria-hidden="true">↗</span><span>Part tags show the nudge it needs and the nudge it makes.</span></div>
+      </aside>
+    </div>
+
+    <div class="howto" aria-label="How to play">
+      <span><strong>1.</strong> Pick a part</span><span class="howto-separator">→</span>
+      <span><strong>2.</strong> Put it in a station</span><span class="howto-separator">→</span>
+      <span><strong>3.</strong> Run the machine</span>
+    </div>
+    <div class="win-banner" id="win-banner" role="status"></div>
+    <p class="footer-note">No actual toast was harmed in the making of these puzzles.</p>
+  </main>
+
+  <script>
+    const levels = [
+      {
+        name: "The Bell Situation",
+        chapter: "Workshop",
+        objective: "Get the marble to ring the bell. It could just be carried over, but where's the fun in that?",
+        goalLabel: "Make it ring",
+        stations: 4,
+        start: "drop",
+        goal: "ring",
+        parts: [
+          { id: "chute", name: "Marble chute", icon: "🛝", description: "A brisk start downhill.", input: "drop", output: "roll", action: "The marble rolls down the chute." },
+          { id: "dominoes", name: "Domino parade", icon: "🁣", description: "One little nudge, many big feelings.", input: "roll", output: "tip", action: "The marble tips the first domino. The rest follow." },
+          { id: "lever", name: "Teeter lever", icon: "⚖️", description: "Turns a tip into a lift.", input: "tip", output: "lift", action: "The dominoes tip the lever, lifting its other end." },
+          { id: "bell", name: "Rope bell", icon: "🔔", description: "Finally, a reason for all this.", input: "lift", output: "ring", action: "The lever lifts the string. Ding!" },
+          { id: "ramp", name: "Side ramp", icon: "📐", description: "A tempting detour.", input: "roll", output: "slide", action: "The marble slides away on the side ramp." },
+          { id: "fan", name: "Desk fan", icon: "🪭", description: "Excellent for loose papers.", input: "lift", output: "spin", action: "The fan spins, but the bell string stays put." },
+          { id: "spring", name: "Spring cup", icon: "🌀", description: "Boing is not quite ding.", input: "drop", output: "bounce", action: "The marble bounces in the spring cup." }
+        ]
+      },
+      {
+        name: "Breakfast, Eventually",
+        chapter: "Kitchen",
+        objective: "Get the toaster to pop. Five stations for one piece of toast feels about right.",
+        goalLabel: "Pop the toast",
+        stations: 5,
+        start: "wind",
+        goal: "toast",
+        parts: [
+          { id: "crank", name: "Hand crank", icon: "🔧", description: "A little elbow grease.", input: "wind", output: "spin", action: "The hand crank spins with one last turn." },
+          { id: "gears", name: "Gear train", icon: "⚙️", description: "Turns spin into a roll.", input: "spin", output: "roll", action: "The gears turn and send a marble rolling." },
+          { id: "cup", name: "Marble basket", icon: "🧺", description: "A rolling marble makes a knock.", input: "roll", output: "knock", action: "The marble drops into a basket and knocks the switch." },
+          { id: "switch", name: "Big red switch", icon: "🔴", description: "On means toast. Probably.", input: "knock", output: "heat", action: "The basket bumps the switch. Toaster on!" },
+          { id: "toaster", name: "Old toaster", icon: "🍞", description: "The grand finale.", input: "heat", output: "toast", action: "Pop! Breakfast has taken the scenic route." },
+          { id: "windbell", name: "Wind chime", icon: "🎐", description: "A pleasant but unhelpful spin.", input: "spin", output: "ring", action: "The gears ring the wind chime. Lovely." },
+          { id: "kdomino", name: "Tiny dominoes", icon: "🁣", description: "A knock becomes a tip.", input: "roll", output: "tip", action: "The marble topples the tiny dominoes." },
+          { id: "kfan", name: "Cooling fan", icon: "🪭", description: "Makes a breeze, not heat.", input: "heat", output: "breeze", action: "The fan catches a warm draft and blows it away." },
+          { id: "kspring", name: "Springy plate", icon: "🌀", description: "A windy bounce.", input: "wind", output: "bounce", action: "The plate bounces, knocking nothing in particular." }
+        ]
+      },
+      {
+        name: "Let There Be Light",
+        chapter: "Attic",
+        objective: "Turn on the tiny lamp with an unnecessarily grand chain of events.",
+        goalLabel: "Light the lamp",
+        stations: 6,
+        start: "push",
+        goal: "light",
+        parts: [
+          { id: "springboard", name: "Springboard", icon: "🌀", description: "The big opening bounce.", input: "push", output: "bounce", action: "The push sends the ball bouncing off the springboard." },
+          { id: "track", name: "Marble track", icon: "🛝", description: "Bounce becomes roll.", input: "bounce", output: "roll", action: "The bouncing ball lands in the track and rolls on." },
+          { id: "adominoes", name: "Domino parade", icon: "🁣", description: "Roll becomes tip.", input: "roll", output: "tip", action: "The ball tips a domino. A whole row tips after it." },
+          { id: "pulley", name: "Rope & pulley", icon: "🪢", description: "A tip pulls the rope.", input: "tip", output: "pull", action: "The last domino pulls the pulley cord." },
+          { id: "magnet", name: "Lucky magnet", icon: "🧲", description: "Pull becomes clink.", input: "pull", output: "clink", action: "The cord tugs a magnet; a metal washer goes clink." },
+          { id: "lamp", name: "Tiny lamp", icon: "💡", description: "A shiny way to finish.", input: "clink", output: "light", action: "The washer taps the lamp switch. Let there be light!" },
+          { id: "atticfan", name: "Attic fan", icon: "🪭", description: "A push makes a breeze.", input: "push", output: "breeze", action: "The fan makes a breeze, rustling the plans." },
+          { id: "atticbell", name: "Old dinner bell", icon: "🔔", description: "A pull makes a ring.", input: "pull", output: "ring", action: "The cord rings the dinner bell. Nobody is home." },
+          { id: "atticlever", name: "Loose lever", icon: "⚖️", description: "A tip becomes a lift.", input: "tip", output: "lift", action: "The dominoes tip the loose lever." },
+          { id: "atticcrank", name: "Dusty crank", icon: "🔧", description: "A roll turns the crank.", input: "roll", output: "spin", action: "The ball turns the dusty crank." }
+        ]
+      }
+    ];
+
+    const signalNames = {
+      drop: "Drop", roll: "Roll", tip: "Tip", lift: "Lift", spin: "Spin", ring: "Ring",
+      wind: "Wind", knock: "Knock", heat: "Heat", toast: "Toast", push: "Push",
+      bounce: "Bounce", pull: "Pull", clink: "Clink", light: "Light", slide: "Slide", breeze: "Breeze"
+    };
+
+    const state = { level: 0, unlocked: 0, placed: [], selected: null, running: false, activeSlot: -1, passed: [], failedSlot: -1, complete: false, report: null };
+    const $ = (selector) => document.querySelector(selector);
+    const game = $("#game");
+
+    function signalTag(signal) {
+      const label = signalNames[signal] || signal;
+      return `<span class="signal sig-${signal}">${label}</span>`;
+    }
+
+    function currentLevel() { return levels[state.level]; }
+
+    function setReport(title, text, icon = "🧰", tone = "") {
+      state.report = { title, text, icon, tone };
+      renderReport();
+    }
+
+    function renderReport() {
+      const report = state.report || { title: "Ready when you are", text: "Choose a part and place it in a station.", icon: "🧰", tone: "" };
+      $("#report-title").textContent = report.title;
+      $("#report-text").textContent = report.text;
+      $("#report-icon").textContent = report.icon;
+      $("#report-copy").className = `report-copy ${report.tone}`;
+    }
+
+    function renderNav() {
+      $("#level-nav").innerHTML = levels.map((level, index) => {
+        const locked = index > state.unlocked;
+        const current = index === state.level;
+        const label = locked ? "Locked puzzle" : `Puzzle ${index + 1}: ${level.name}`;
+        return `<button class="level-tab" type="button" data-level="${index}" aria-label="${label}" ${current ? 'aria-current="step"' : ""} ${locked || state.running ? "disabled" : ""}><span class="tab-number">${locked ? "·" : index < state.unlocked ? "✓" : String(index + 1).padStart(2, "0")}</span><span>${locked ? "Locked" : level.chapter}</span></button>`;
+      }).join("");
+      $("#level-nav").querySelectorAll("[data-level]").forEach((button) => {
+        button.addEventListener("click", () => loadLevel(Number(button.dataset.level)));
+      });
+    }
+
+    function renderMachine() {
+      const level = currentLevel();
+      const source = `<div class="endpoint"><span class="endpoint-icon" aria-hidden="true">${state.level === 0 ? "🔵" : state.level === 1 ? "🌬️" : "👆"}</span><span class="endpoint-label">It starts</span><span class="endpoint-name">${state.level === 0 ? "A marble" : state.level === 1 ? "A crank" : "A push"}</span>${signalTag(level.start)}</div>`;
+      const goal = `<div class="endpoint goal"><span class="endpoint-icon" aria-hidden="true">${state.level === 0 ? "🔔" : state.level === 1 ? "🍞" : "💡"}</span><span class="endpoint-label">The goal</span><span class="endpoint-name">${state.level === 0 ? "A bell" : state.level === 1 ? "Toast" : "A lamp"}</span>${signalTag(level.goal)}</div>`;
+      const slots = state.placed.map((partId, index) => {
+        const part = level.parts.find((item) => item.id === partId);
+        const classes = ["slot"];
+        if (part) classes.push("filled");
+        if (state.activeSlot === index) classes.push("running");
+        if (state.passed.includes(index)) classes.push("passed");
+        if (state.failedSlot === index) classes.push("failed");
+        if (state.selected && !part) classes.push("selected-target");
+        const contents = part
+          ? `<span class="slot-number">${String(index + 1).padStart(2, "0")}</span><span class="run-orb" aria-hidden="true"></span><span class="slot-icon" aria-hidden="true">${part.icon}</span><span class="slot-title">${part.name}</span><span class="slot-signals">${signalTag(part.input)}<span aria-hidden="true">→</span>${signalTag(part.output)}</span><span class="sr-only">${signalNames[part.input]} to ${signalNames[part.output]}</span>`
+          : `<span class="slot-number">${String(index + 1).padStart(2, "0")}</span><span class="slot-icon" aria-hidden="true">＋</span><span class="slot-placeholder">${state.selected ? "Place part" : "Open station"}</span><span class="slot-hint">${state.selected ? "Click to fit" : "Choose from tray"}</span>`;
+        const label = part ? `Station ${index + 1}, ${part.name}. Click to remove.` : `Open station ${index + 1}. Click to place selected part.`;
+        const remove = part ? `<button class="slot-remove" data-remove="${index}" type="button" aria-label="Remove ${part.name} from station ${index + 1}" ${state.running ? "disabled" : ""}>×</button>` : "";
+        return `<div class="${classes.join(" ")}"><button class="slot-main" type="button" data-slot="${index}" aria-label="${label}" ${state.running ? "disabled" : ""}>${contents}</button>${remove}</div>`;
+      });
+      const line = [source];
+      slots.forEach((slot, index) => {
+        line.push(`<div class="flow-arrow ${state.activeSlot === index ? "active" : ""} ${state.failedSlot === index ? "bad" : ""}" aria-hidden="true"><span>›</span></div>`, slot);
+      });
+      line.push(`<div class="flow-arrow ${state.activeSlot === state.placed.length ? "active" : ""} ${state.failedSlot === state.placed.length ? "bad" : ""}" aria-hidden="true"><span>›</span></div>`, goal);
+      $("#machine-line").innerHTML = line.join("");
+
+      $("#machine-line").querySelectorAll("[data-slot]").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (state.running) return;
+          const slotIndex = Number(button.dataset.slot);
+          if (state.selected) placePart(state.selected, slotIndex);
+          else if (state.placed[slotIndex]) removePart(slotIndex);
+          else setReport("Pick a part first", "Choose one from the tray, then choose an open station.", "👆");
+        });
+        button.addEventListener("dragover", (event) => { if (!state.running) event.preventDefault(); });
+        button.addEventListener("drop", (event) => {
+          event.preventDefault();
+          const partId = event.dataTransfer.getData("text/plain");
+          if (partId) placePart(partId, Number(button.dataset.slot));
+        });
+      });
+      $("#machine-line").querySelectorAll("[data-remove]").forEach((button) => {
+        button.addEventListener("click", (event) => { event.stopPropagation(); removePart(Number(button.dataset.remove)); });
+      });
+    }
+
+    function renderTray() {
+      const level = currentLevel();
+      const used = state.placed.filter(Boolean).length;
+      $("#tray-count").textContent = `${used} / ${level.parts.length} picked`;
+      $("#parts-list").innerHTML = level.parts.map((part) => {
+        const isUsed = state.placed.includes(part.id);
+        const isSelected = state.selected === part.id;
+        return `<button class="part-card ${isUsed ? "used" : ""} ${isSelected ? "selected" : ""}" type="button" draggable="${!isUsed && !state.running}" data-part="${part.id}" aria-pressed="${isSelected}" aria-label="${part.name}, needs ${signalNames[part.input]}, makes ${signalNames[part.output]}${isUsed ? ", already in machine" : ""}" ${isUsed || state.running ? "disabled" : ""}><span class="part-icon" aria-hidden="true">${part.icon}</span><span class="part-info"><span class="part-name">${part.name}</span><span class="part-description">${part.description}</span><span class="part-connectors">${signalTag(part.input)}<span class="part-arrow" aria-hidden="true">→</span>${signalTag(part.output)}</span></span><span class="part-state ${isUsed ? "in-machine" : ""}">${isUsed ? "IN" : isSelected ? "PICKED" : "DRAG"}</span></button>`;
+      }).join("");
+      $("#parts-list").querySelectorAll("[data-part]").forEach((button) => {
+        button.addEventListener("click", () => selectPart(button.dataset.part));
+        button.addEventListener("dragstart", (event) => {
+          if (button.disabled) { event.preventDefault(); return; }
+          event.dataTransfer.setData("text/plain", button.dataset.part);
+          event.dataTransfer.effectAllowed = "move";
+          state.selected = button.dataset.part;
+        });
+      });
+    }
+
+    function render() {
+      const level = currentLevel();
+      $("#level-kicker").textContent = `Puzzle ${String(state.level + 1).padStart(2, "0")} · ${level.chapter}`;
+      $("#puzzle-title").textContent = level.name;
+      $("#objective").textContent = level.objective;
+      $("#goal-stamp").textContent = level.goalLabel;
+      $("#run-button").disabled = state.running;
+      $("#clear-button").disabled = state.running || state.placed.every((part) => !part);
+      $("#run-button").innerHTML = state.running ? "⏳ Machine running" : "▶ Run machine";
+      $("#next-button").hidden = !state.complete || state.level >= levels.length - 1;
+      $("#win-banner").classList.toggle("visible", state.complete);
+      $("#win-banner").innerHTML = state.complete ? `<span aria-hidden="true">✨</span><span>${state.level === levels.length - 1 ? "All puzzles solved. You made the long way around." : "Against all odds, the machine works."}</span><span aria-hidden="true">✨</span>` : "";
+      renderNav();
+      renderMachine();
+      renderTray();
+      renderReport();
+    }
+
+    function selectPart(partId) {
+      if (state.running) return;
+      const part = currentLevel().parts.find((item) => item.id === partId);
+      if (!part || state.placed.includes(partId)) return;
+      state.selected = state.selected === partId ? null : partId;
+      state.activeSlot = -1;
+      state.passed = [];
+      state.failedSlot = -1;
+      state.complete = false;
+      if (state.selected) setReport("Part picked", `${part.name} needs ${signalNames[part.input]} and makes ${signalNames[part.output]}. Choose a station.`, part.icon);
+      else setReport("Ready when you are", "Choose a part and place it in a station.", "🧰");
+      render();
+    }
+
+    function placePart(partId, slotIndex) {
+      if (state.running) return;
+      const part = currentLevel().parts.find((item) => item.id === partId);
+      if (!part) return;
+      const oldIndex = state.placed.indexOf(partId);
+      if (oldIndex >= 0 && oldIndex !== slotIndex) {
+        state.placed[oldIndex] = state.placed[slotIndex] || null;
+      }
+      state.placed[slotIndex] = partId;
+      state.selected = null;
+      state.activeSlot = -1;
+      state.passed = [];
+      state.failedSlot = -1;
+      state.complete = false;
+      setReport("Part installed", `${part.name} is in station ${slotIndex + 1}. Keep following the signals.`, part.icon);
+      render();
+    }
+
+    function removePart(slotIndex) {
+      if (state.running) return;
+      const partId = state.placed[slotIndex];
+      if (!partId) return;
+      const part = currentLevel().parts.find((item) => item.id === partId);
+      state.placed[slotIndex] = null;
+      state.selected = null;
+      state.activeSlot = -1;
+      state.passed = [];
+      state.failedSlot = -1;
+      state.complete = false;
+      setReport("Part back in tray", `${part.name} is ready to try somewhere else.`, "↩️");
+      render();
+    }
+
+    function loadLevel(index) {
+      if (state.running || index > state.unlocked) return;
+      state.level = index;
+      state.placed = Array(currentLevel().stations).fill(null);
+      state.selected = null;
+      state.running = false;
+      state.activeSlot = -1;
+      state.passed = [];
+      state.failedSlot = -1;
+      state.complete = false;
+      state.report = { title: "Ready when you are", text: "Choose a part and place it in a station.", icon: "🧰", tone: "" };
+      render();
+    }
+
+    function pause(milliseconds) { return new Promise((resolve) => window.setTimeout(resolve, milliseconds)); }
+
+    async function runMachine() {
+      if (state.running) return;
+      state.running = true;
+      state.selected = null;
+      state.activeSlot = -1;
+      state.passed = [];
+      state.failedSlot = -1;
+      state.complete = false;
+      let signal = currentLevel().start;
+      setReport("Here we go…", `The first nudge is ${signalNames[signal]}.`, "🔵");
+      render();
+      await pause(450);
+
+      for (let index = 0; index < state.placed.length; index += 1) {
+        const partId = state.placed[index];
+        const part = currentLevel().parts.find((item) => item.id === partId);
+        state.activeSlot = index;
+        render();
+        await pause(650);
+        if (!part) {
+          state.failedSlot = index;
+          state.activeSlot = -1;
+          state.running = false;
+          setReport("A station is empty", `The machine reaches station ${index + 1} with a ${signalNames[signal]} nudge and finds nobody home.`, "🫥", "error");
+          render();
+          return;
+        }
+        if (part.input !== signal) {
+          state.failedSlot = index;
+          state.activeSlot = -1;
+          state.running = false;
+          setReport("The chain broke", `${part.name} needs ${signalNames[part.input]}, but arrived with ${signalNames[signal]}. Move a matching part here.`, "🪵", "error");
+          render();
+          return;
+        }
+        signal = part.output;
+        state.passed.push(index);
+        setReport("Nice and unnecessary", part.action, part.icon);
+        render();
+        await pause(380);
+      }
+
+      state.activeSlot = -1;
+      state.running = false;
+      if (signal === currentLevel().goal) {
+        state.complete = true;
+        state.unlocked = Math.max(state.unlocked, state.level + 1);
+        setReport("Machine accomplished", `It made a ${signalNames[signal].toLowerCase()} happen. Everything went according to the very long plan.`, "🎉", "success");
+        render();
+      } else {
+        state.failedSlot = state.placed.length;
+        setReport("So close, yet so elaborate", `The last nudge was ${signalNames[signal]}, but the goal needs ${signalNames[currentLevel().goal]}. Swap the final link.`, "🤔", "error");
+        render();
+      }
+    }
+
+    $("#clear-button").addEventListener("click", () => {
+      if (state.running) return;
+      state.placed.fill(null);
+      state.selected = null;
+      state.activeSlot = -1;
+      state.passed = [];
+      state.failedSlot = -1;
+      state.complete = false;
+      setReport("Fresh start", "The stations are clear. Give the machine another go.", "🧹");
+      render();
+    });
+    $("#run-button").addEventListener("click", runMachine);
+    $("#next-button").addEventListener("click", () => loadLevel(state.level + 1));
+
+    loadLevel(0);
+  </script>
+</body>
+</html>
