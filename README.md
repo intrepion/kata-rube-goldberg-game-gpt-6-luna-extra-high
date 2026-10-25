@@ -1,5 +1,9 @@
 # Long Way Around
 
+## Play online
+
+[Play Long Way Around](https://intrepion.github.io/kata-rube-goldberg-game-gpt-6-luna-extra-high/) — free, playable in your browser.
+
 A self-contained Rube Goldberg physics sandbox. Arrange the marble, dominoes, blocks, ramps, springboards, and bumpers in a 2D workshop, then run the simulation and see what happens.
 
 ## Play
