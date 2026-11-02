@@ -1,6 +1,43 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "gameId": "kata-rube-goldberg-game-gpt-6-luna-extra-high",
   "playUrl": "https://intrepion.github.io/kata-rube-goldberg-game-gpt-6-luna-extra-high/",
-  "screenshots": []
+  "screenshots": [
+    {
+      "path": "arcade/screenshots/ci-20261102-01.jpg",
+      "sha256": "786d238036b906cd391751fa7965830908b1783be5491b7532645d95e2e33f44",
+      "alt": "Long Way Around gameplay, view 1",
+      "provenance": {
+        "kind": "ci_gameplay_capture",
+        "sourcePath": "arcade/capture-evidence/ci-20261102-01.png",
+        "sourceSha256": "8a815f166da56d8b211eba6f5b22cd222791b6825917d0ded489e08a2cfeb44b",
+        "captureCommit": "9cf2075e47251058c961cf847f4a4494745f39c4",
+        "workflowRunId": "41422458272",
+        "inputHashes": {
+          "index.html": "2fef8a9be681681b35d3d91de600fea82e8bb9109c7c4a5f20115abbb433d331"
+        },
+        "publishedFilesVerifiedAt": "2026-11-02T19:01:20Z",
+        "captureRecordPath": "arcade/capture-evidence/ci-20261102-record.json",
+        "captureRecordSha256": "e25a13597e941cecbe50059db5184a59614116d7903bdec0264c00fbb14cc413"
+      }
+    },
+    {
+      "path": "arcade/screenshots/ci-20261102-02.jpg",
+      "sha256": "a0f17a4696bf6440f52fffba67b17fb1da2d859b6d16fa642e36f375a9a689f5",
+      "alt": "Long Way Around gameplay, view 2",
+      "provenance": {
+        "kind": "ci_gameplay_capture",
+        "sourcePath": "arcade/capture-evidence/ci-20261102-02.png",
+        "sourceSha256": "a3491158dbebaabf19775f3f5e8fed3ddab197ea5ae246a4ff4af745fc00d3d3",
+        "captureCommit": "9cf2075e47251058c961cf847f4a4494745f39c4",
+        "workflowRunId": "41422458272",
+        "inputHashes": {
+          "index.html": "2fef8a9be681681b35d3d91de600fea82e8bb9109c7c4a5f20115abbb433d331"
+        },
+        "publishedFilesVerifiedAt": "2026-11-02T19:01:20Z",
+        "captureRecordPath": "arcade/capture-evidence/ci-20261102-record.json",
+        "captureRecordSha256": "e25a13597e941cecbe50059db5184a59614116d7903bdec0264c00fbb14cc413"
+      }
+    }
+  ]
 }

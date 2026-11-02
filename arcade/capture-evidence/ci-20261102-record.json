@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "workflowCommit": "cc1f8923221a57f61df7122540382ac0483b9cca",
+  "sourceCommit": "9cf2075e47251058c961cf847f4a4494745f39c4",
+  "runId": "41422458272",
+  "url": "http://127.0.0.1:4256/",
+  "inputs": {
+    "index.html": "2fef8a9be681681b35d3d91de600fea82e8bb9109c7c4a5f20115abbb433d331"
+  },
+  "browser": "153.0.8010.12",
+  "viewport": {
+    "width": 1280,
+    "height": 1000
+  },
+  "screenshots": [
+    "long-way-01.png",
+    "long-way-02.png"
+  ]
+}
