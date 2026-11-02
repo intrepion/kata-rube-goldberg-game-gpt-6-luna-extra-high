@@ -11,3 +11,7 @@ A self-contained Rube Goldberg physics sandbox. Arrange the marble, dominoes, bl
 Open `index.html` in a modern browser. Drag parts from the tray into the workshop, or tap a part and tap the scene on a touchscreen. While paused, drag placed objects to reposition them. Select an object and press `R` to rotate it; press `Delete` to remove it. Press `Space` or **Run physics** to simulate, **Reset run** to restore the last arrangement, and **Starter layout** to restore the original machine. The gravity slider changes the simulated acceleration.
 
 The simulator is self-contained and needs no installation, build step, or external libraries.
+
+## Arcade metadata
+
+See [docs/arcade-metadata.md](docs/arcade-metadata.md) for the game-owned manifest and screenshot provenance.
